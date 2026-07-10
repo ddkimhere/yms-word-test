@@ -218,7 +218,7 @@ if generate_btn:
             display_title = book_title if book_title else 'Vocabulary Test'
             display_unit = book_unit if book_unit else '전범위'
 
-            full_html = f"""
+            full_html = """
             <!DOCTYPE html>
             <html lang="ko">
             <head>
