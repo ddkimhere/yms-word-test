@@ -1,0 +1,1 @@
+# yms-word-test
