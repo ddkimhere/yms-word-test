@@ -3,32 +3,35 @@ import streamlit.components.v1 as components
 import random
 import re
 import os
+import json
 from datetime import datetime
 
-# 🔥 파이어베이스 라이브러리 불러오기
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
 # ==========================================
-# 1. Firebase 클라우드 초기화 (열쇠 꽂기)
+# 1. Firebase 클라우드 초기화 (비밀금고 연동)
 # ==========================================
-# 앱이 중복으로 실행되는 것을 방지
 if not firebase_admin._apps:
     try:
-        # 아까 다운받은 열쇠 파일 이름입니다!
-        cred = credentials.Certificate('firebase_key.json')
+        # 스트림릿 클라우드 환경일 경우 (Secrets 금고에서 열쇠 꺼내기)
+        if "firebase_credentials" in st.secrets:
+            key_dict = json.loads(st.secrets["firebase_credentials"])
+            cred = credentials.Certificate(key_dict)
+        # 내 컴퓨터(로컬) 환경일 경우 (파일에서 열쇠 꺼내기)
+        else:
+            cred = credentials.Certificate('firebase_key.json')
+            
         firebase_admin.initialize_app(cred)
     except Exception as e:
-        st.error("⚠️ 'firebase_key.json' 파일을 찾을 수 없거나 오류가 있습니다! 파일이 app.py와 같은 폴더에 있는지 확인해주세요.")
+        st.error(f"⚠️ 파이어베이스 인증 오류: {e}")
 
-# Firestore 데이터베이스 연결
 try:
     db = firestore.client()
 except:
     db = None
 
-# 클라우드에서 데이터 가져오는 함수
 def fetch_from_cloud():
     if db is None: return {}
     try:
@@ -55,7 +58,6 @@ with st.sidebar:
     st.markdown("Firebase 클라우드 연동 버전 ☁️")
     st.markdown("---")
     
-    # ☁️ 클라우드 보관함
     st.subheader("☁️ 클라우드 단어장 보관함")
     
     cloud_data = fetch_from_cloud()
@@ -83,7 +85,6 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # 📘 입력 영역
     st.subheader("📘 1. 교재 정보")
     book_title = st.text_input("책 제목", key="input_title", placeholder="예: 고등 필수 Voca")
     book_unit = st.text_input("출제 범위 (Unit)", key="input_unit", placeholder="예: Unit 01-03")
@@ -92,8 +93,6 @@ with st.sidebar:
     if st.button("☁️ 클라우드 서버에 현재 데이터 저장"):
         if book_title and st.session_state.input_text and db:
             save_key = f"{book_title}::{book_unit}" if book_unit else f"{book_title}::전체"
-            
-            # 파이어베이스에 실시간 기록
             db.collection('yms_vocabularies').document(save_key).set({
                 "title": book_title, 
                 "unit": book_unit, 
@@ -120,7 +119,6 @@ if generate_btn:
     if not word_input.strip():
         st.error("단어를 입력해주세요!")
     else:
-        # 지능형 단어 분석기
         parsed_words = []
         for line in word_input.strip().split('\n'):
             line = line.strip()
