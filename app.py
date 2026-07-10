@@ -20,14 +20,14 @@ except ImportError:
 # 1. Firebase 클라우드 연결 (기억상실 강제 적용)
 # ==========================================
 def init_firebase():
-    if not firebase_imported:
-        return None, "❌ 파이어베이스 라이브러리가 설치되지 않았습니다."
-        
-    # 💡 [핵심 패치] 스트림릿이 쥐고 있는 예전 불량 열쇠 기억을 강제로 전부 삭제!
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+    # 💡 이 부분이 핵심입니다. 기존 연결을 전부 지우고 다시 시작함!
     if firebase_admin._apps:
         for app_name in list(firebase_admin._apps.keys()):
             firebase_admin.delete_app(firebase_admin.get_app(app_name))
-
+    
+    # ... 이후 인증 로직 ...
     # 새 열쇠로 완전히 처음부터 다시 연결 시도
     try:
         if "firebase_credentials" in st.secrets:
