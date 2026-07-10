@@ -11,34 +11,44 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 
 # ==========================================
-# 1. Firebase 클라우드 초기화 (비밀금고 연동)
+# 1. Firebase 클라우드 초기화 (무한 로딩 방지 완벽 패치)
 # ==========================================
 if not firebase_admin._apps:
     try:
-        # 스트림릿 클라우드 환경일 경우 (Secrets 금고에서 열쇠 꺼내기)
+        # 1-1. 스트림릿 클라우드 금고(Secrets)에 열쇠가 있는 경우
         if "firebase_credentials" in st.secrets:
-            key_dict = json.loads(st.secrets["firebase_credentials"])
+            secrets_val = st.secrets["firebase_credentials"]
+            # 복사 붙여넣기 방식에 따라 딕셔너리/문자열 자동 변환
+            key_dict = json.loads(secrets_val) if isinstance(secrets_val, str) else dict(secrets_val)
             cred = credentials.Certificate(key_dict)
-        # 내 컴퓨터(로컬) 환경일 경우 (파일에서 열쇠 꺼내기)
-        else:
-            cred = credentials.Certificate('firebase_key.json')
+            firebase_admin.initialize_app(cred)
             
-        firebase_admin.initialize_app(cred)
+        # 1-2. 내 컴퓨터에 'firebase_key.json' 파일이 있는 경우
+        elif os.path.exists('firebase_key.json'):
+            cred = credentials.Certificate('firebase_key.json')
+            firebase_admin.initialize_app(cred)
+            
+        else:
+            st.error("⚠️ 파이어베이스 열쇠를 찾을 수 없습니다. (Secrets 세팅이나 firebase_key.json 파일을 확인해주세요)")
     except Exception as e:
-        st.error(f"⚠️ 파이어베이스 인증 오류: {e}")
+        st.error(f"⚠️ 파이어베이스 열쇠 인증 실패 (내용이 잘못되었습니다): {e}")
 
-try:
-    db = firestore.client()
-except:
-    db = None
+# 🔥 인증이 완벽하게 성공했을 때만 데이터베이스 연결! (여기서 무한 로딩이 걸리던 것을 차단)
+db = None
+if firebase_admin._apps:
+    try:
+        db = firestore.client()
+    except Exception as e:
+        st.error(f"⚠️ 데이터베이스 연결 오류: {e}")
 
+# 데이터 불러오기 함수
 def fetch_from_cloud():
     if db is None: return {}
     try:
         docs = db.collection('yms_vocabularies').stream()
         return {doc.id: doc.to_dict() for doc in docs}
     except Exception as e:
-        st.error(f"클라우드 불러오기 실패: {e}")
+        st.error(f"☁️ 클라우드 데이터를 불러오지 못했습니다: {e}")
         return {}
 
 # ==========================================
@@ -72,15 +82,15 @@ with st.sidebar:
                 st.session_state.input_title = cloud_data[selected_key].get('title', '')
                 st.session_state.input_unit = cloud_data[selected_key].get('unit', '')
                 st.session_state.input_text = cloud_data[selected_key].get('text', '')
-                st.success("클라우드에서 성공적으로 불러왔습니다!")
+                st.success("클라우드에서 불러왔습니다!")
                 st.rerun()
             else:
                 st.warning("단어장을 선택하세요.")
     with col_b:
-        if st.button("🗑️ 서버에서 삭제", use_container_width=True):
+        if st.button("🗑️ 삭제", use_container_width=True):
             if selected_key != "▼ 단어장을 선택하세요" and db:
                 db.collection('yms_vocabularies').document(selected_key).delete()
-                st.success("서버에서 완전히 삭제되었습니다.")
+                st.success("삭제되었습니다.")
                 st.rerun()
 
     st.markdown("---")
@@ -99,10 +109,10 @@ with st.sidebar:
                 "text": st.session_state.input_text,
                 "updatedAt": firestore.SERVER_TIMESTAMP
             })
-            st.success(f"'{save_key}' 클라우드 저장 완료! 💾")
+            st.success(f"'{save_key}' 저장 완료! 💾")
             st.rerun()
         else:
-            st.error("책 제목과 단어 데이터를 입력해주세요.")
+            st.error("책 제목과 단어 데이터, 그리고 클라우드 연결을 확인해주세요.")
 
     word_input = st.text_area("엑셀 데이터 복사/붙여넣기", key="input_text", height=200)
 
