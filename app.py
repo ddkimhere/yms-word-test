@@ -6,10 +6,8 @@ import os
 import json
 from datetime import datetime
 
-# ⭐️ 스트림릿 규정상 이 설정 함수가 반드시 최상단에 실행되어야 에러가 안 납니다!
 st.set_page_config(page_title="YMS 단어 테스트 생성기", layout="wide")
 
-# 임포트 오류 방지용 안전장치
 try:
     import firebase_admin
     from firebase_admin import credentials
@@ -19,18 +17,18 @@ except ImportError:
     firebase_imported = False
 
 # ==========================================
-# 1. Firebase 클라우드 연결 함수
+# 1. Firebase 클라우드 연결 (기억상실 강제 적용)
 # ==========================================
 def init_firebase():
     if not firebase_imported:
-        return None, "❌ 파이어베이스 라이브러리가 설치되지 않았습니다. (requirements.txt 확인 필요)"
+        return None, "❌ 파이어베이스 라이브러리가 설치되지 않았습니다."
         
+    # 💡 [핵심 패치] 스트림릿이 쥐고 있는 예전 불량 열쇠 기억을 강제로 전부 삭제!
     if firebase_admin._apps:
-        try:
-            return firestore.client(), "✅ 클라우드 서버 연결 활성화됨"
-        except:
-            return None, "❌ Firestore client connection failed"
+        for app_name in list(firebase_admin._apps.keys()):
+            firebase_admin.delete_app(firebase_admin.get_app(app_name))
 
+    # 새 열쇠로 완전히 처음부터 다시 연결 시도
     try:
         if "firebase_credentials" in st.secrets:
             secrets_val = st.secrets["firebase_credentials"]
@@ -48,9 +46,9 @@ def init_firebase():
             return firestore.client(), "✅ 로컬 키 파일 인증 완료"
             
         else:
-            return None, "💡 오프라인 모드 (Secrets 금고에 열쇠를 넣으면 클라우드가 활성화됩니다)"
+            return None, "💡 오프라인 모드 (Secrets 금고 확인 필요)"
     except Exception as e:
-        return None, f"❌ 인증 실패: {str(e)}"
+        return None, f"❌ 인증 실패 (열쇠 형태 불량): {str(e)}"
 
 db, status_msg = init_firebase()
 
@@ -73,15 +71,14 @@ with st.sidebar:
     st.subheader("☁️ 클라우드 단어장 보관함")
     
     if db is not None:
-        # 💡 .get(timeout=10)을 적용해 목록 동기화 시 무한 로딩 원천 봉쇄
         if st.button("🔄 클라우드 단어 목록 동기화", use_container_width=True):
-            with st.spinner("서버에서 단어장 리스트를 가져오는 중..."):
+            with st.spinner("서버에서 리스트를 가져오는 중..."):
                 try:
-                    docs = db.collection('yms_vocabularies').get(timeout=10)
+                    docs = db.collection('yms_vocabularies').get(timeout=8)
                     st.session_state.cloud_data = {doc.id: doc.to_dict() for doc in docs}
-                    st.toast("클라우드 동기화 성공! ✨")
+                    st.toast("동기화 성공! ✨")
                 except Exception as e:
-                    st.error(f"서버 동기화 실패 (시간 초과): {e}")
+                    st.error(f"동기화 실패 (무한 로딩 차단됨): {e}")
         
         if st.session_state.cloud_data:
             cloud_keys = list(st.session_state.cloud_data.keys())
@@ -97,19 +94,16 @@ with st.sidebar:
                         st.session_state.input_text = tgt.get('text', '')
                         st.rerun()
             with col_b:
-                if st.button("🗑️ 서버에서 삭제", use_container_width=True):
+                if st.button("🗑️ 삭제", use_container_width=True):
                     if selected_key != "▼ 단어장을 선택하세요":
-                        try:
-                            db.collection('yms_vocabularies').document(selected_key).delete(timeout=10)
-                            del st.session_state.cloud_data[selected_key]
-                            st.success("서버 삭제 완료")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"삭제 실패: {e}")
+                        db.collection('yms_vocabularies').document(selected_key).delete(timeout=5)
+                        del st.session_state.cloud_data[selected_key]
+                        st.success("삭제 완료")
+                        st.rerun()
         else:
             st.info("💡 위의 동기화 버튼을 누르면 클라우드 단어장을 로드합니다.")
     else:
-        st.warning("⚠️ 클라우드가 연결되지 않았습니다. (오프라인 모드로 시험지 제작은 가능)")
+        st.warning("⚠️ 클라우드가 연결되지 않았습니다.")
 
     st.markdown("---")
 
@@ -119,7 +113,6 @@ with st.sidebar:
 
     st.subheader("📊 2. 단어 데이터 입력")
     
-    # 💡 [핵심 패치] 저장 연동 시 무한 버퍼링을 막기 위해 timeout=10을 엄격히 적용
     if st.button("☁️ 현재 데이터를 클라우드에 저장"):
         if db is not None and book_title and st.session_state.input_text:
             try:
@@ -129,13 +122,13 @@ with st.sidebar:
                     "unit": book_unit, 
                     "text": st.session_state.input_text,
                     "updatedAt": datetime.now()
-                }, timeout=10)
+                }, timeout=8)
                 st.success(f"클라우드 저장 완료! 💾")
                 st.session_state.cloud_data[save_key] = {"title": book_title, "unit": book_unit, "text": st.session_state.input_text}
             except Exception as e:
-                st.error(f"🚨 저장 실패 (10초 시간 초과 또는 권한 거부):\n\n{e}\n\n파이어베이스 규칙(Rules)이 '테스트 모드(if true;)'로 활성화되어 있는지 확인해 주세요.")
+                st.error(f"🚨 저장 실패:\n{e}")
         else:
-            st.error("책 제목, 단어 데이터를 입력하거나 클라우드 연결 상태를 확인하세요.")
+            st.error("책 제목과 단어 데이터를 모두 기입해 주세요.")
 
     word_input = st.text_area("엑셀 데이터 복사/붙여넣기", key="input_text", height=180)
 
@@ -146,10 +139,10 @@ with st.sidebar:
     generate_btn = st.button("⚡ 시험지 + 답지 생성하기", type="primary", use_container_width=True)
 
 # ==========================================
-# 4. 메인 화면 출력 영역
+# 4. 메인 화면 출력 영역 (인쇄 양식)
 # ==========================================
 if "❌" in status_msg:
-    st.error(f"⚠️ 클라우드 연결에 문제가 발생했습니다.\n\n{status_msg}\n\n스트림릿 Secrets 설정을 확인해주세요.")
+    st.error(f"⚠️ 클라우드 연결 실패:\n\n{status_msg}\n\n[Reboot app]을 눌러도 이 메시지가 뜬다면 Secrets 금고 안의 내용이 잘못 복사된 것입니다.")
 
 if generate_btn:
     if not word_input.strip():
@@ -233,35 +226,13 @@ if generate_btn:
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
                     body {{ font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; padding: 20px; }}
-                    
-                    .btn-container {{
-                        position: fixed; top: 20px; right: 20px; z-index: 1000;
-                        display: flex; gap: 12px;
-                    }}
-                    .print-btn {{
-                        color: white; padding: 14px 24px;
-                        border-radius: 12px; font-weight: 900; cursor: pointer;
-                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
-                        transition: all 0.2s; border: none; font-size: 14px;
-                    }}
-                    .btn-test {{ background: #1e3a8a; }}
-                    .btn-test:hover {{ background: #2563eb; transform: translateY(-2px); }}
-                    .btn-ans {{ background: #ea580c; }}
-                    .btn-ans:hover {{ background: #f97316; transform: translateY(-2px); }}
-
-                    .paper {{
-                        background: white; max-width: 820px; margin: 0 auto 50px auto;
-                        padding: 50px; box-shadow: 0 4px 20px rgba(15,23,42,0.04);
-                        border-top: 8px solid #1e3a8a; border-radius: 8px;
-                    }}
+                    .btn-container {{ position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 12px; }}
+                    .print-btn {{ color: white; padding: 14px 24px; border-radius: 12px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); transition: all 0.2s; border: none; font-size: 14px; }}
+                    .btn-test {{ background: #1e3a8a; }} .btn-test:hover {{ background: #2563eb; transform: translateY(-2px); }}
+                    .btn-ans {{ background: #ea580c; }} .btn-ans:hover {{ background: #f97316; transform: translateY(-2px); }}
+                    .paper {{ background: white; max-width: 820px; margin: 0 auto 50px auto; padding: 50px; box-shadow: 0 4px 20px rgba(15,23,42,0.04); border-top: 8px solid #1e3a8a; border-radius: 8px; }}
                     .paper.ans-sheet {{ border-top: 8px solid #ea580c; }}
-                    
-                    @media print {{
-                        body {{ background: white; padding: 0; }}
-                        .btn-container {{ display: none !important; }}
-                        .paper {{ box-shadow: none; margin: 0; padding: 20px; border-top: none; }}
-                        .page-break {{ page-break-before: always; }}
-                    }}
+                    @media print {{ body {{ background: white; padding: 0; }} .btn-container {{ display: none !important; }} .paper {{ box-shadow: none; margin: 0; padding: 20px; border-top: none; }} .page-break {{ page-break-before: always; }} }}
                 </style>
                 <script>
                     function printTestSheet() {{
@@ -272,7 +243,6 @@ if generate_btn:
                         document.getElementById('answer-sheet').style.display = '';
                         document.getElementById('page-break-element').style.display = '';
                     }}
-
                     function printAnswerSheet() {{
                         document.getElementById('test-sheet').style.display = 'none';
                         document.getElementById('page-break-element').style.display = 'none';
@@ -288,7 +258,6 @@ if generate_btn:
                     <button class="print-btn btn-test" onclick="printTestSheet()">🖨️ 학생용 시험지 인쇄</button>
                     <button class="print-btn btn-ans" onclick="printAnswerSheet()">🔑 채점용 답지 인쇄</button>
                 </div>
-
                 <div id="test-sheet" class="paper">
                     <div class="border-2 border-blue-900/80 p-5 mb-8 rounded-md bg-slate-50/50">
                         <div class="flex justify-between items-end border-b-2 border-blue-900 pb-3 mb-3">
@@ -307,9 +276,7 @@ if generate_btn:
                     </div>
                     <div class="grid grid-cols-2 gap-x-16 gap-y-5">{test_html}</div>
                 </div>
-
                 <div id="page-break-element" class="page-break"></div>
-
                 <div id="answer-sheet" class="paper ans-sheet">
                     <div class="border-2 border-orange-900/70 p-5 mb-8 bg-orange-50/30 rounded-md">
                         <div class="flex justify-between items-end border-b-2 border-orange-600 pb-3 mb-3">
