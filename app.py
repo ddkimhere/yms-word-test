@@ -73,14 +73,15 @@ with st.sidebar:
     st.subheader("☁️ 클라우드 단어장 보관함")
     
     if db is not None:
+        # 💡 .get(timeout=10)을 적용해 목록 동기화 시 무한 로딩 원천 봉쇄
         if st.button("🔄 클라우드 단어 목록 동기화", use_container_width=True):
             with st.spinner("서버에서 단어장 리스트를 가져오는 중..."):
                 try:
-                    docs = db.collection('yms_vocabularies').stream()
+                    docs = db.collection('yms_vocabularies').get(timeout=10)
                     st.session_state.cloud_data = {doc.id: doc.to_dict() for doc in docs}
                     st.toast("클라우드 동기화 성공! ✨")
                 except Exception as e:
-                    st.error(f"서버 동기화 실패: {e}")
+                    st.error(f"서버 동기화 실패 (시간 초과): {e}")
         
         if st.session_state.cloud_data:
             cloud_keys = list(st.session_state.cloud_data.keys())
@@ -98,10 +99,13 @@ with st.sidebar:
             with col_b:
                 if st.button("🗑️ 서버에서 삭제", use_container_width=True):
                     if selected_key != "▼ 단어장을 선택하세요":
-                        db.collection('yms_vocabularies').document(selected_key).delete()
-                        del st.session_state.cloud_data[selected_key]
-                        st.success("서버 삭제 완료")
-                        st.rerun()
+                        try:
+                            db.collection('yms_vocabularies').document(selected_key).delete(timeout=10)
+                            del st.session_state.cloud_data[selected_key]
+                            st.success("서버 삭제 완료")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"삭제 실패: {e}")
         else:
             st.info("💡 위의 동기화 버튼을 누르면 클라우드 단어장을 로드합니다.")
     else:
@@ -114,6 +118,8 @@ with st.sidebar:
     book_unit = st.text_input("출제 범위 (Unit)", key="input_unit", placeholder="예: Unit 01-03")
 
     st.subheader("📊 2. 단어 데이터 입력")
+    
+    # 💡 [핵심 패치] 저장 연동 시 무한 버퍼링을 막기 위해 timeout=10을 엄격히 적용
     if st.button("☁️ 현재 데이터를 클라우드에 저장"):
         if db is not None and book_title and st.session_state.input_text:
             try:
@@ -123,11 +129,11 @@ with st.sidebar:
                     "unit": book_unit, 
                     "text": st.session_state.input_text,
                     "updatedAt": datetime.now()
-                })
+                }, timeout=10)
                 st.success(f"클라우드 저장 완료! 💾")
                 st.session_state.cloud_data[save_key] = {"title": book_title, "unit": book_unit, "text": st.session_state.input_text}
             except Exception as e:
-                st.error(f"저장 실패: {e}")
+                st.error(f"🚨 저장 실패 (10초 시간 초과 또는 권한 거부):\n\n{e}\n\n파이어베이스 규칙(Rules)이 '테스트 모드(if true;)'로 활성화되어 있는지 확인해 주세요.")
         else:
             st.error("책 제목, 단어 데이터를 입력하거나 클라우드 연결 상태를 확인하세요.")
 
@@ -219,7 +225,6 @@ if generate_btn:
             display_title = book_title if book_title else 'Vocabulary Test'
             display_unit = book_unit if book_unit else '전범위'
 
-            # 🎨 하이엔드 인쇄 템플릿 (학생용/답지 개별 인쇄 스크립트 추가)
             full_html = f"""
             <!DOCTYPE html>
             <html lang="ko">
@@ -229,7 +234,6 @@ if generate_btn:
                     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
                     body {{ font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; padding: 20px; }}
                     
-                    /* 상단 버튼 컨테이너 */
                     .btn-container {{
                         position: fixed; top: 20px; right: 20px; z-index: 1000;
                         display: flex; gap: 12px;
@@ -260,24 +264,20 @@ if generate_btn:
                     }}
                 </style>
                 <script>
-                    // 🎯 학생용 시험지만 인쇄하는 함수
                     function printTestSheet() {{
                         document.getElementById('answer-sheet').style.display = 'none';
                         document.getElementById('page-break-element').style.display = 'none';
                         document.getElementById('test-sheet').style.display = 'block';
                         window.print();
-                        // 인쇄 완료 후 복원
                         document.getElementById('answer-sheet').style.display = '';
                         document.getElementById('page-break-element').style.display = '';
                     }}
 
-                    // 🎯 교사용 정답지만 인쇄하는 함수
                     function printAnswerSheet() {{
                         document.getElementById('test-sheet').style.display = 'none';
                         document.getElementById('page-break-element').style.display = 'none';
                         document.getElementById('answer-sheet').style.display = 'block';
                         window.print();
-                        // 인쇄 완료 후 복원
                         document.getElementById('test-sheet').style.display = '';
                         document.getElementById('page-break-element').style.display = '';
                     }}
