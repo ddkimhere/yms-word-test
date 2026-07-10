@@ -228,4 +228,73 @@ if generate_btn:
             <!DOCTYPE html>
             <html lang="ko">
             <head>
-                <script src="
+                <script src="https://cdn.tailwindcss.com"></script>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+                    body {{ font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; padding: 20px; }}
+                    .print-btn {{
+                        position: fixed; top: 20px; right: 20px; z-index: 1000;
+                        background: #1e3a8a; color: white; padding: 14px 28px;
+                        border-radius: 12px; font-weight: 900; cursor: pointer;
+                        box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.3);
+                        transition: all 0.2s; border: none; font-size: 14px;
+                    }}
+                    .print-btn:hover {{ background: #ea580c; transform: translateY(-2px); }}
+                    .paper {{
+                        background: white; max-width: 820px; margin: 0 auto 50px auto;
+                        padding: 50px; box-shadow: 0 4px 20px rgba(15,23,42,0.04);
+                        border-top: 8px solid #1e3a8a; border-radius: 8px;
+                    }}
+                    .paper.ans-sheet {{ border-top: 8px solid #ea580c; }}
+                    @media print {{
+                        body {{ background: white; padding: 0; }}
+                        .print-btn {{ display: none !important; }}
+                        .paper {{ box-shadow: none; margin: 0; padding: 20px; border-top: none; }}
+                        .page-break {{ page-break-before: always; }}
+                    }}
+                </style>
+            </head>
+            <body>
+                <button class="print-btn" onclick="window.print()">🖨️ 신속 인쇄 / PDF 저장하기</button>
+                <div class="paper">
+                    <div class="border-2 border-blue-900/80 p-5 mb-8 rounded-md bg-slate-50/50">
+                        <div class="flex justify-between items-end border-b-2 border-blue-900 pb-3 mb-3">
+                            <div class="text-xs font-black tracking-widest text-blue-900 uppercase">YMS <span class="text-[10px] font-normal text-slate-400 italic lowercase">your mastery solution</span></div>
+                            <div class="text-lg font-black tracking-tight text-slate-900">{display_title}</div>
+                        </div>
+                        <div class="flex justify-between text-xs font-bold text-slate-600">
+                            <div>Date: {today_date}</div>
+                            <div>Unit: {display_unit}</div>
+                            <div>Name: __________________</div>
+                            <div class="text-orange-600 font-black px-2 py-0.5 border border-orange-200 rounded bg-orange-50/50">Score: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / 100</div>
+                        </div>
+                    </div>
+                    <div class="text-center mb-10">
+                        <h2 class="text-2xl font-black tracking-[0.25em] border-b-2 inline-block border-slate-800 pb-1.5 px-12 uppercase text-slate-900">Vocabulary Test</h2>
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-16 gap-y-5">{test_html}</div>
+                </div>
+                <div class="page-break"></div>
+                <div class="paper ans-sheet">
+                    <div class="border-2 border-orange-900/70 p-5 mb-8 bg-orange-50/30 rounded-md">
+                        <div class="flex justify-between items-end border-b-2 border-orange-600 pb-3 mb-3">
+                            <div class="text-xs font-black tracking-widest text-orange-600 uppercase">YMS <span class="text-[10px] font-normal italic lowercase text-slate-400">Answer Key</span></div>
+                            <div class="text-lg font-black tracking-tight text-orange-900">{display_title} (정답지)</div>
+                        </div>
+                        <div class="flex justify-between text-xs font-bold text-orange-800">
+                            <div>Date: {today_date}</div>
+                            <div>Unit: {display_unit}</div>
+                            <div class="font-extrabold text-blue-900">※ YMS 원장님/강사 채점 가이드 문서입니다.</div>
+                        </div>
+                    </div>
+                    <div class="text-center mb-10">
+                        <h2 class="text-2xl font-black tracking-[0.25em] border-b-2 inline-block border-orange-600 text-orange-600 pb-1.5 px-12 uppercase">Answer Key</h2>
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-16 gap-y-5">{answer_html}</div>
+                </div>
+            </body>
+            </html>
+            """
+            components.html(full_html, height=1200, scrolling=True)
+else:
+    st.info("👈 좌측 대시보드에 단어 목록을 채워넣은 후 [⚡ 시험지 + 답지 생성하기] 버튼을 누르면 인쇄 미리보기가 활성화됩니다.")
