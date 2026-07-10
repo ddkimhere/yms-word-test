@@ -19,7 +19,7 @@ except ImportError:
     firebase_imported = False
 
 # ==========================================
-# 1. Firebase 클라우드 연결 함수 (호출될 때만 작동)
+# 1. Firebase 클라우드 연결 함수
 # ==========================================
 def init_firebase():
     if not firebase_imported:
@@ -29,11 +29,9 @@ def init_firebase():
         try:
             return firestore.client(), "✅ 클라우드 서버 연결 활성화됨"
         except:
-            return None, "❌ Firestore 클라이언트 연결 실패"
+            return None, "❌ Firestore client connection failed"
 
-    # 열쇠 찾기 시작
     try:
-        # 케이스 A: 스트림릿 클라우드 비밀금고(Secrets)에 저장한 경우
         if "firebase_credentials" in st.secrets:
             secrets_val = st.secrets["firebase_credentials"]
             if isinstance(secrets_val, str):
@@ -44,7 +42,6 @@ def init_firebase():
             firebase_admin.initialize_app(cred)
             return firestore.client(), "✅ 클라우드 서버 연결 완료"
             
-        # 케이스 B: 컴퓨터 로컬에 파일이 있는 경우
         elif os.path.exists('firebase_key.json'):
             cred = credentials.Certificate('firebase_key.json')
             firebase_admin.initialize_app(cred)
@@ -53,9 +50,8 @@ def init_firebase():
         else:
             return None, "💡 오프라인 모드 (Secrets 금고에 열쇠를 넣으면 클라우드가 활성화됩니다)"
     except Exception as e:
-        return None, f"❌ 인증 실패 (Secrets 내용 확인 필요): {str(e)}"
+        return None, f"❌ 인증 실패: {str(e)}"
 
-# 앱 시작 시 화면 멈춤을 막기 위해 안전하게 호출
 db, status_msg = init_firebase()
 
 # ==========================================
@@ -146,9 +142,8 @@ with st.sidebar:
 # ==========================================
 # 4. 메인 화면 출력 영역
 # ==========================================
-# 💡 만약 파이어베이스 연결에 실패했다면 메인 화면에 크게 이유를 띄워줍니다!
 if "❌" in status_msg:
-    st.error(f"⚠️ 클라우드 연결에 문제가 발생했습니다.\n\n{status_msg}\n\n스트림릿 설정 창의 [Secrets]에 복사해 넣은 내용의 중괄호({{ }})나 쉼표가 누락되었는지 확인해주세요.")
+    st.error(f"⚠️ 클라우드 연결에 문제가 발생했습니다.\n\n{status_msg}\n\n스트림릿 Secrets 설정을 확인해주세요.")
 
 if generate_btn:
     if not word_input.strip():
@@ -224,6 +219,7 @@ if generate_btn:
             display_title = book_title if book_title else 'Vocabulary Test'
             display_unit = book_unit if book_unit else '전범위'
 
+            # 🎨 하이엔드 인쇄 템플릿 (학생용/답지 개별 인쇄 스크립트 추가)
             full_html = f"""
             <!DOCTYPE html>
             <html lang="ko">
@@ -232,31 +228,68 @@ if generate_btn:
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
                     body {{ font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; padding: 20px; }}
-                    .print-btn {{
+                    
+                    /* 상단 버튼 컨테이너 */
+                    .btn-container {{
                         position: fixed; top: 20px; right: 20px; z-index: 1000;
-                        background: #1e3a8a; color: white; padding: 14px 28px;
+                        display: flex; gap: 12px;
+                    }}
+                    .print-btn {{
+                        color: white; padding: 14px 24px;
                         border-radius: 12px; font-weight: 900; cursor: pointer;
-                        box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.3);
+                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
                         transition: all 0.2s; border: none; font-size: 14px;
                     }}
-                    .print-btn:hover {{ background: #ea580c; transform: translateY(-2px); }}
+                    .btn-test {{ background: #1e3a8a; }}
+                    .btn-test:hover {{ background: #2563eb; transform: translateY(-2px); }}
+                    .btn-ans {{ background: #ea580c; }}
+                    .btn-ans:hover {{ background: #f97316; transform: translateY(-2px); }}
+
                     .paper {{
                         background: white; max-width: 820px; margin: 0 auto 50px auto;
                         padding: 50px; box-shadow: 0 4px 20px rgba(15,23,42,0.04);
                         border-top: 8px solid #1e3a8a; border-radius: 8px;
                     }}
                     .paper.ans-sheet {{ border-top: 8px solid #ea580c; }}
+                    
                     @media print {{
                         body {{ background: white; padding: 0; }}
-                        .print-btn {{ display: none !important; }}
+                        .btn-container {{ display: none !important; }}
                         .paper {{ box-shadow: none; margin: 0; padding: 20px; border-top: none; }}
                         .page-break {{ page-break-before: always; }}
                     }}
                 </style>
+                <script>
+                    // 🎯 학생용 시험지만 인쇄하는 함수
+                    function printTestSheet() {{
+                        document.getElementById('answer-sheet').style.display = 'none';
+                        document.getElementById('page-break-element').style.display = 'none';
+                        document.getElementById('test-sheet').style.display = 'block';
+                        window.print();
+                        // 인쇄 완료 후 복원
+                        document.getElementById('answer-sheet').style.display = '';
+                        document.getElementById('page-break-element').style.display = '';
+                    }}
+
+                    // 🎯 교사용 정답지만 인쇄하는 함수
+                    function printAnswerSheet() {{
+                        document.getElementById('test-sheet').style.display = 'none';
+                        document.getElementById('page-break-element').style.display = 'none';
+                        document.getElementById('answer-sheet').style.display = 'block';
+                        window.print();
+                        // 인쇄 완료 후 복원
+                        document.getElementById('test-sheet').style.display = '';
+                        document.getElementById('page-break-element').style.display = '';
+                    }}
+                </script>
             </head>
             <body>
-                <button class="print-btn" onclick="window.print()">🖨️ 신속 인쇄 / PDF 저장하기</button>
-                <div class="paper">
+                <div class="btn-container">
+                    <button class="print-btn btn-test" onclick="printTestSheet()">🖨️ 학생용 시험지 인쇄</button>
+                    <button class="print-btn btn-ans" onclick="printAnswerSheet()">🔑 채점용 답지 인쇄</button>
+                </div>
+
+                <div id="test-sheet" class="paper">
                     <div class="border-2 border-blue-900/80 p-5 mb-8 rounded-md bg-slate-50/50">
                         <div class="flex justify-between items-end border-b-2 border-blue-900 pb-3 mb-3">
                             <div class="text-xs font-black tracking-widest text-blue-900 uppercase">YMS <span class="text-[10px] font-normal text-slate-400 italic lowercase">your mastery solution</span></div>
@@ -274,8 +307,10 @@ if generate_btn:
                     </div>
                     <div class="grid grid-cols-2 gap-x-16 gap-y-5">{test_html}</div>
                 </div>
-                <div class="page-break"></div>
-                <div class="paper ans-sheet">
+
+                <div id="page-break-element" class="page-break"></div>
+
+                <div id="answer-sheet" class="paper ans-sheet">
                     <div class="border-2 border-orange-900/70 p-5 mb-8 bg-orange-50/30 rounded-md">
                         <div class="flex justify-between items-end border-b-2 border-orange-600 pb-3 mb-3">
                             <div class="text-xs font-black tracking-widest text-orange-600 uppercase">YMS <span class="text-[10px] font-normal italic lowercase text-slate-400">Answer Key</span></div>
