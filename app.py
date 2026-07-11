@@ -15,40 +15,26 @@ try:
     firebase_imported = True
 except ImportError:
     firebase_imported = False
-
 # ==========================================
-# 1. Firebase 클라우드 연결 (기억상실 강제 적용)
+# 1. Firebase 클라우드 연결 (파일 직접 읽기 버전)
 # ==========================================
 def init_firebase():
-    import firebase_admin
-    from firebase_admin import credentials, firestore
-    # 💡 이 부분이 핵심입니다. 기존 연결을 전부 지우고 다시 시작함!
+    if not firebase_imported:
+        return None, "❌ 파이어베이스 라이브러리 미설치"
+        
     if firebase_admin._apps:
+        # 기존 앱이 있다면 삭제하여 초기화
         for app_name in list(firebase_admin._apps.keys()):
             firebase_admin.delete_app(firebase_admin.get_app(app_name))
-    
-    # ... 이후 인증 로직 ...
-    # 새 열쇠로 완전히 처음부터 다시 연결 시도
+
     try:
-        if "firebase_credentials" in st.secrets:
-            secrets_val = st.secrets["firebase_credentials"]
-            if isinstance(secrets_val, str):
-                key_dict = json.loads(secrets_val)
-            else:
-                key_dict = dict(secrets_val)
-            cred = credentials.Certificate(key_dict)
-            firebase_admin.initialize_app(cred)
-            return firestore.client(), "✅ 클라우드 서버 연결 완료"
-            
-        elif os.path.exists('firebase_key.json'):
-            cred = credentials.Certificate('firebase_key.json')
-            firebase_admin.initialize_app(cred)
-            return firestore.client(), "✅ 로컬 키 파일 인증 완료"
-            
-        else:
-            return None, "💡 오프라인 모드 (Secrets 금고 확인 필요)"
+        # 깃허브에 올린 firebase_key.json 파일을 직접 경로로 읽음
+        key_path = os.path.join(os.path.dirname(__file__), 'firebase_key.json')
+        cred = credentials.Certificate(key_path)
+        firebase_admin.initialize_app(cred)
+        return firestore.client(), "✅ 클라우드 서버 연결 완료 (파일 읽기 성공)"
     except Exception as e:
-        return None, f"❌ 인증 실패 (열쇠 형태 불량): {str(e)}"
+        return None, f"❌ 인증 실패: {str(e)}"
 
 db, status_msg = init_firebase()
 
