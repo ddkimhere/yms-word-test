@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YMS 단어 테스트 생성기 v11 (전체 통합본)</title>
+    <title>YMS 단어 테스트 생성기 v12 (수정판)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
@@ -11,9 +11,8 @@
         @media print {
             body { background-color: #ffffff; padding: 0; }
             .no-print { display: none !important; }
-            #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 0; box-shadow: none !important; border: none !important; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
             .page-break { page-break-before: always; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </head>
@@ -22,29 +21,23 @@
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <div class="lg:col-span-5 bg-white p-6 rounded-3xl shadow-xl border border-slate-200/60 no-print space-y-6 self-start">
-            <h1 class="text-xl font-extrabold text-slate-900">📝 TEST GENERATOR <span class="text-blue-600 font-medium text-sm">v11.0</span></h1>
+            <h1 class="text-xl font-extrabold text-slate-900">📝 TEST GENERATOR <span class="text-blue-600 font-medium text-sm">v12.0</span></h1>
             
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl space-y-3">
-                <h2 class="text-sm font-bold text-indigo-900">💾 단어장 보관함</h2>
+                <h2 class="text-sm font-bold text-indigo-900">💾 보관함</h2>
                 <div class="flex flex-col gap-2">
                     <select id="savedBookList" onchange="updateUnitList()" class="w-full p-2.5 border border-indigo-200 rounded-lg text-sm"></select>
                     <div class="flex gap-2">
                         <select id="savedUnitList" class="flex-1 p-2.5 border border-indigo-200 rounded-lg text-sm" disabled></select>
-                        <button onclick="loadVocab()" class="bg-indigo-600 text-white text-xs font-bold py-2.5 px-4 rounded-lg">불러오기</button>
-                        <button onclick="deleteVocab()" class="bg-white border border-red-200 text-red-500 text-xs font-bold py-2.5 px-3 rounded-lg">삭제</button>
+                        <button onclick="loadVocab()" class="bg-indigo-600 text-white text-xs font-bold py-2 px-4 rounded-lg">불러오기</button>
                     </div>
                 </div>
             </div>
 
             <div class="space-y-3">
-                <h2 class="text-sm font-bold text-slate-700">📘 교재 정보</h2>
                 <div class="grid grid-cols-2 gap-3">
                     <input type="text" id="bookTitle" oninput="updateHeader()" placeholder="책 제목" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm">
                     <input type="text" id="bookUnit" oninput="updateHeader()" placeholder="Unit" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm">
-                </div>
-                <div class="flex justify-between items-end">
-                    <h2 class="text-sm font-bold text-slate-700">📊 데이터 입력</h2>
-                    <button onclick="saveVocab()" class="text-[11px] text-emerald-600 bg-emerald-50 px-2 rounded border border-emerald-200">+ 보관함 저장</button>
                 </div>
                 <textarea id="excelInput" class="w-full h-32 p-3 border border-slate-200 rounded-xl text-xs font-mono bg-slate-50" placeholder="단어&#9;뜻"></textarea>
             </div>
@@ -58,21 +51,19 @@
                 </select>
             </div>
 
-            <button onclick="generateTest()" class="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl">⚡ 시험지 & 답지 빌드</button>
+            <div class="flex gap-2">
+                <button onclick="generateTest()" class="flex-1 bg-slate-900 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl">⚡ 빌드</button>
+                <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl">🖨️ 인쇄</button>
+            </div>
         </div>
 
-        <div class="lg:col-span-7 bg-white p-8 rounded-3xl shadow-xl border border-slate-200/60 min-h-[800px]">
-            <div class="flex justify-between items-center pb-4 mb-6 no-print">
-                <h2 class="text-sm font-bold text-slate-600">YMS 가이드 뷰어</h2>
-                <button onclick="window.print()" class="bg-blue-600 text-white text-xs font-bold py-2.5 px-5 rounded-xl">🖨️ 인쇄 / PDF 출력</button>
-            </div>
-            
+        <div class="lg:col-span-7 bg-white p-8 rounded-3xl shadow-xl border border-slate-200/60">
             <div id="printArea">
                 <div id="testPaper">
                     <div class="border-2 border-slate-900 p-4 mb-6">
                         <div class="flex justify-between border-b border-slate-400 pb-3">
                             <div class="text-sm font-black tracking-widest uppercase">YMS</div>
-                            <div id="viewBookTitle" class="text-base font-black">책 제목을 입력하세요</div>
+                            <div id="viewBookTitle" class="text-base font-black">제목을 입력하세요</div>
                         </div>
                         <div class="flex text-xs font-bold mt-3 gap-4">
                             <div id="viewDate">Date: 2026. 07. 13</div>
@@ -82,7 +73,7 @@
                     <ol id="testList" class="grid grid-cols-2 gap-x-12 gap-y-3 text-xs font-medium"></ol>
                 </div>
                 <div class="page-break mt-20 pt-10 border-t-2 border-dashed border-slate-300">
-                    <h3 class="text-lg font-black mb-6 text-slate-800 underline">Answer Key (정답지)</h3>
+                    <h3 class="text-lg font-black mb-6 text-slate-800 underline">Answer Key</h3>
                     <div id="answerList" class="grid grid-cols-3 gap-4 text-xs font-mono text-slate-600"></div>
                 </div>
             </div>
@@ -98,23 +89,10 @@
             renderBookList();
         }
 
-        function saveVocab() {
-            const title = document.getElementById('bookTitle').value.trim();
-            const unit = document.getElementById('bookUnit').value.trim();
-            const text = document.getElementById('excelInput').value.trim();
-            if (!title || !text) return alert('제목과 데이터를 모두 입력하세요.');
-            const key = `${title}::${unit || '전체'}`;
-            let lib = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-            lib[key] = { title, unit, text };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(lib));
-            renderBookList(); alert('저장되었습니다.');
-        }
-
         function renderBookList() {
             const lib = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             const select = document.getElementById('savedBookList');
-            const books = [...new Set(Object.values(lib).map(i => i.title))];
-            select.innerHTML = '<option value="">▼ 책 선택</option>' + books.map(b => `<option value="${b}">${b}</option>`).join('');
+            select.innerHTML = '<option value="">▼ 책 선택</option>' + [...new Set(Object.values(lib).map(i => i.title))].map(b => `<option value="${b}">${b}</option>`).join('');
         }
 
         function updateUnitList() {
@@ -122,9 +100,7 @@
             const book = document.getElementById('savedBookList').value;
             const select = document.getElementById('savedUnitList');
             select.innerHTML = '<option value="">▼ 유닛 선택</option>';
-            Object.entries(lib).forEach(([k, v]) => {
-                if (v.title === book) select.innerHTML += `<option value="${k}">${v.unit || '전체'}</option>`;
-            });
+            Object.entries(lib).forEach(([k, v]) => { if (v.title === book) select.innerHTML += `<option value="${k}">${v.unit || '전체'}</option>`; });
             select.disabled = false;
         }
 
@@ -139,14 +115,6 @@
             }
         }
 
-        function deleteVocab() {
-            const key = document.getElementById('savedUnitList').value;
-            let lib = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-            delete lib[key];
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(lib));
-            renderBookList(); alert('삭제되었습니다.');
-        }
-
         function updateHeader() {
             document.getElementById('viewBookTitle').innerText = document.getElementById('bookTitle').value || '제목 입력';
             document.getElementById('viewBookUnit').innerText = document.getElementById('bookUnit').value || '';
@@ -155,7 +123,7 @@
         function generateTest() {
             updateHeader();
             const text = document.getElementById('excelInput').value.trim();
-            const count = parseInt(document.getElementById('wordCount').value);
+            const count = parseInt(document.getElementById('wordCount').value); // 문항 수 정상 반영
             const type = document.getElementById('testType').value;
             if (!text) return alert('데이터를 입력해주세요!');
 
