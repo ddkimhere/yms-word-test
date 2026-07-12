@@ -609,144 +609,90 @@
         }
 
 
-
-        function generateTest() {
-
-            updateHeader();
-
-            const inputText = document.getElementById('excelInput').value.trim();
-
-            const count = parseInt(document.getElementById('wordCount').value);
-
-            const type = document.getElementById('testType').value;
-
-            const testList = document.getElementById('testList');
-
-
-
-            if (!inputText) {
-
-                alert('엑셀 단어 리스트를 붙여넣어 주세요!');
-
-                return;
-
-            }
-
-
-
-            let words = inputText.split('\n').map(line => {
-
-                let parts = line.includes('\t') ? line.split('\t') : line.split(',');
-
-                return { eng: parts[0] ? parts[0].trim() : '', kor: parts[1] ? parts[1].trim() : '' };
-
-            }).filter(word => word.eng && word.kor);
-
-
-
-            if (words.length === 0) {
-
-                alert('데이터 분석에 실패했습니다. 엑셀 형식을 다시 확인해 주세요.');
-
-                return;
-
-            }
-
-
-
-            for (let i = words.length - 1; i > 0; i--) {
-
-                const j = Math.floor(Math.random() * (i + 1));
-
-                [words[i], words[j]] = [words[j], words[i]];
-
-            }
-
-
-
-            const selectedWords = words.slice(0, count);
-
-            testList.innerHTML = '';
-
-            
-
-            const halfPoint = Math.ceil(selectedWords.length / 2);
-
-
-
-            selectedWords.forEach((word, index) => {
-
-                let questionHTML = '';
-
-                const displayIndex = String(index + 1).padStart(2, '0');
-
-                
-
-                let isEngQuestion = true;
-
-                if (type === 'eng') {
-
-                    isEngQuestion = true;
-
-                } else if (type === 'kor') {
-
-                    isEngQuestion = false;
-
-                } else {
-
-                    isEngQuestion = index < halfPoint;
-
-                }
-
-                
-
-                if (isEngQuestion) {
-
-                    questionHTML = `
-
-                        <span class="font-bold text-[13px] text-slate-900 tracking-tight w-1/2 overflow-hidden text-ellipsis whitespace-nowrap">${word.eng}</span>
-
-                        <span class="text-slate-300 font-light mx-2">············➔</span>
-
-                        <span class="flex-1 border-b border-slate-300 min-w-[120px] h-5">&nbsp;</span>
-
-                    `;
-
-                } else {
-
-                    questionHTML = `
-
-                        <span class="font-bold text-xs text-slate-700 tracking-tight w-1/2 overflow-hidden text-ellipsis whitespace-nowrap">${word.kor}</span>
-
-                        <span class="text-slate-300 font-light mx-2">············➔</span>
-
-                        <span class="flex-1 border-b border-slate-300 min-w-[120px] h-5">&nbsp;</span>
-
-                    `;
-
-                }
-
-
-
-                const li = document.createElement('li');
-
-                li.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
-
-                li.innerHTML = `
-
-                    <div class="flex items-center w-full">
-
-                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
-
-                        <div class="flex items-center flex-1 min-w-0">${questionHTML}</div>
-
-                    </div>
-
-                `;
-
-                testList.appendChild(li);
-
-            });
+function generateTest() {
+    updateHeader();
+    const inputText = document.getElementById('excelInput').value.trim();
+    // 사용자가 입력한 숫자를 그대로 가져옴
+    const count = parseInt(document.getElementById('wordCount').value);
+    const type = document.getElementById('testType').value;
+    const testList = document.getElementById('testList');
+
+    if (!inputText) {
+        alert('엑셀 단어 리스트를 붙여넣어 주세요!');
+        return;
+    }
+
+    if (!count || count < 1) {
+        alert('출제 문항 수를 정확히 입력해 주세요!');
+        return;
+    }
+
+    let words = inputText.split('\n').map(line => {
+        let parts = line.includes('\t') ? line.split('\t') : line.split(',');
+        return { eng: parts[0] ? parts[0].trim() : '', kor: parts[1] ? parts[1].trim() : '' };
+    }).filter(word => word.eng && word.kor);
+
+    if (words.length === 0) {
+        alert('데이터 분석에 실패했습니다. 엑셀 형식을 다시 확인해 주세요.');
+        return;
+    }
+
+    // 1. 먼저 전체 단어를 무작위로 섞음
+    for (let i = words.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [words[i], words[j]] = [words[j], words[i]];
+    }
+
+    // 2. 🔥 사용자가 입력한 숫자(count)만큼 정확히 배열을 생성
+    const selectedWords = [];
+    for (let i = 0; i < count; i++) {
+        // 단어 수가 부족해도 처음부터 다시 순회하며 강제로 채워 넣음
+        selectedWords.push(words[i % words.length]);
+    }
+
+    testList.innerHTML = '';
+    
+    const halfPoint = Math.ceil(selectedWords.length / 2);
+
+    // 3. 정확히 맞춰진 배열(selectedWords)로 시험지 렌더링
+    selectedWords.forEach((word, index) => {
+        let questionHTML = '';
+        const displayIndex = String(index + 1).padStart(2, '0');
+        
+        let isEngQuestion = true;
+        if (type === 'eng') {
+            isEngQuestion = true;
+        } else if (type === 'kor') {
+            isEngQuestion = false;
+        } else {
+            isEngQuestion = index < halfPoint;
+        }
+        
+        if (isEngQuestion) {
+            questionHTML = `
+                <span class="font-bold text-[13px] text-slate-900 tracking-tight w-1/2 overflow-hidden text-ellipsis whitespace-nowrap">${word.eng}</span>
+                <span class="text-slate-300 font-light mx-2">············➔</span>
+                <span class="flex-1 border-b border-slate-300 min-w-[120px] h-5">&nbsp;</span>
+            `;
+        } else {
+            questionHTML = `
+                <span class="font-bold text-xs text-slate-700 tracking-tight w-1/2 overflow-hidden text-ellipsis whitespace-nowrap">${word.kor}</span>
+                <span class="text-slate-300 font-light mx-2">············➔</span>
+                <span class="flex-1 border-b border-slate-300 min-w-[120px] h-5">&nbsp;</span>
+            `;
+        }
+
+        const li = document.createElement('li');
+        li.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
+        li.innerHTML = `
+            <div class="flex items-center w-full">
+                <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
+                <div class="flex items-center flex-1 min-w-0">${questionHTML}</div>
+            </div>
+        `;
+        testList.appendChild(li);
+    });
+}
 
         }
 
