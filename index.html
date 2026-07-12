@@ -120,30 +120,51 @@
             document.getElementById('viewBookUnit').innerText = document.getElementById('bookUnit').value || '';
         }
 
-        function generateTest() {
+       function generateTest() {
             updateHeader();
-            const text = document.getElementById('excelInput').value.trim();
-            const count = parseInt(document.getElementById('wordCount').value); // 문항 수 정상 반영
+            const inputText = document.getElementById('excelInput').value.trim();
+            // 입력값의 숫자를 확실하게 가져옵니다.
+            const count = parseInt(document.getElementById('wordCount').value);
             const type = document.getElementById('testType').value;
-            if (!text) return alert('데이터를 입력해주세요!');
+            const testList = document.getElementById('testList');
+            const ansList = document.getElementById('answerList');
 
-            let words = text.split('\n').map(line => {
+            if (!inputText) return alert('단어 데이터를 입력해주세요!');
+
+            let words = inputText.split('\n').map(line => {
                 let p = line.split(/\t|,/);
                 return { eng: p[0]?.trim(), kor: p[1]?.trim() };
             }).filter(w => w.eng && w.kor);
 
+            // 데이터가 부족할 경우 경고를 띄우거나, 있는 데이터로만 진행하도록 처리
+            if (words.length < count) {
+                alert(`입력된 단어가 ${words.length}개뿐이라 ${words.length}개로 생성합니다.`);
+            }
+
+            // 셔플
             words.sort(() => Math.random() - 0.5);
             const sel = words.slice(0, count);
-            const testList = document.getElementById('testList');
-            const ansList = document.getElementById('answerList');
-            testList.innerHTML = ''; ansList.innerHTML = '';
+            
+            testList.innerHTML = ''; 
+            ansList.innerHTML = '';
             const half = Math.ceil(sel.length / 2);
 
             sel.forEach((w, i) => {
                 const idx = String(i + 1).padStart(2, '0');
                 const isE = (type === 'eng') || (type === 'mix' && i < half);
-                testList.innerHTML += `<li class="border-b border-slate-100 py-2.5 flex items-center justify-between"><span class="w-6 font-extrabold text-slate-400">${idx}</span><div class="flex-1 flex items-center">${isE ? w.eng : w.kor} <span class="mx-2 text-slate-300">➔</span> <span class="flex-1 border-b border-slate-300 h-4"></span></div></li>`;
-                ansList.innerHTML += `<div class="py-1"><span class="font-bold text-slate-400">${idx}.</span> ${isE ? w.eng : w.kor} = <span class="text-blue-600 font-bold">${isE ? w.kor : w.eng}</span></div>`;
+                
+                // 시험지 렌더링
+                testList.innerHTML += `<li class="border-b border-slate-100 py-2.5 flex items-center justify-between">
+                    <span class="w-6 font-extrabold text-slate-400">${idx}</span>
+                    <div class="flex-1 flex items-center">${isE ? w.eng : w.kor} 
+                    <span class="mx-2 text-slate-300">➔</span> 
+                    <span class="flex-1 border-b border-slate-300 h-4"></span></div></li>`;
+                
+                // 답지 렌더링
+                ansList.innerHTML += `<div class="py-1"><span class="font-bold text-slate-400">${idx}.</span> 
+                    ${isE ? w.eng : w.kor} = <span class="text-blue-600 font-bold">${isE ? w.kor : w.eng}</span></div>`;
+            });
+        }
             });
         }
     </script>
