@@ -308,72 +308,19 @@
                 return;
             }
 
-            let words = inputText.split('\n').map(line => {
-                let parts = line.includes('\t') ? line.split('\t') : line.split(',');
-                return { eng: parts[0] ? parts[0].trim() : '', kor: parts[1] ? parts[1].trim() : '' };
-            }).filter(word => word.eng && word.kor);
+            // 💡 데이터 파싱 로직 대폭 수정 (한글 기준 스마트 분리 적용)
+            let words = inputText.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .map(line => {
+                    let eng = '';
+                    let kor = '';
 
-            if (words.length === 0) {
-                alert('데이터 분석에 실패했습니다. 엑셀 형식을 다시 확인해 주세요.');
-                return;
-            }
-
-            // 1. 단어 목록 무작위 섞기
-            for (let i = words.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [words[i], words[j]] = [words[j], words[i]];
-            }
-
-            // 2. 사용자가 입력한 숫자(count)만큼 '정확히' 배열 생성 (단어가 부족하면 강제 반복)
-            const selectedWords = [];
-            for (let i = 0; i < count; i++) {
-                selectedWords.push(words[i % words.length]);
-            }
-
-            testList.innerHTML = '';
-            
-            const halfPoint = Math.ceil(selectedWords.length / 2);
-
-            // 3. 렌더링 (단어 잘림 방지 CSS 적용)
-            selectedWords.forEach((word, index) => {
-                let questionHTML = '';
-                const displayIndex = String(index + 1).padStart(2, '0');
-                
-                let isEngQuestion = true;
-                if (type === 'eng') {
-                    isEngQuestion = true;
-                } else if (type === 'kor') {
-                    isEngQuestion = false;
-                } else {
-                    isEngQuestion = index < halfPoint;
-                }
-                
-                // 단어가 너무 짧게 잘리지 않도록 CSS 조정 (max-w-[130px] 및 shrink-0 추가)
-                if (isEngQuestion) {
-                    questionHTML = `
-                        <span class="font-bold text-[13px] text-slate-900 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.eng}</span>
-                        <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-                        <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
-                    `;
-                } else {
-                    questionHTML = `
-                        <span class="font-bold text-xs text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.kor}</span>
-                        <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-                        <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
-                    `;
-                }
-
-                const li = document.createElement('li');
-                li.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
-                li.innerHTML = `
-                    <div class="flex items-center w-full">
-                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
-                        <div class="flex items-center flex-1 min-w-0">${questionHTML}</div>
-                    </div>
-                `;
-                testList.appendChild(li);
-            });
-        }
-    </script>
-</body>
-</html>
+                    // 1. 탭(\t)이 있는 경우 (가장 확실한 분리)
+                    if (line.includes('\t')) {
+                        let parts = line.split('\t');
+                        eng = parts[0];
+                        kor = parts.slice(1).join(' ');
+                    } 
+                    // 2. 탭이 없는 경우 (첫 번째 '한글'을 찾아 그곳을 기준으로 자름)
+                    else {
