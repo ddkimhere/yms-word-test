@@ -3,35 +3,21 @@
 <html lang="ko">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>YMS 단어 테스트 생성기 v10</title>
-
+    <title>YMS 단어 테스트 생성기 v11 (답지 포함)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-
     <style>
-
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
-
         body { font-family: 'Noto Sans KR', sans-serif; }
-
         @media print {
-
             body { background-color: #ffffff; padding: 0; }
-
             .no-print { display: none !important; }
-
             #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 0; box-shadow: none !important; border: none !important; }
-
+            .page-break { page-break-before: always; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
         }
-
     </style>
-
 </head>
 
 <body class="bg-slate-100 min-h-screen p-4 md:p-8" onload="initApp()">
@@ -210,10 +196,8 @@
 
                     </div>
 
-                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center gap-1.5">
-
-                        🖨️ 고화질 인쇄 / PDF 출력
-
+                    <button onclick="generateTest()" class="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl transition-all">
+                        ⚡ PREVIEW GENERATE (시험지 & 답지)
                     </button>
 
                 </div>
