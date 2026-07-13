@@ -15,8 +15,10 @@
             .no-print { display: none !important; }
             #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 0; box-shadow: none !important; border: none !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            /* 시험지와 정답지를 다른 페이지로 분리하는 핵심 CSS */
             .page-break { page-break-before: always; margin-top: 0 !important; padding-top: 0 !important; border: none !important; }
+            
+            /* 특정 영역만 인쇄할 때 숨기기 위한 클래스 */
+            .hide-on-print { display: none !important; }
         }
     </style>
 </head>
@@ -24,6 +26,7 @@
 
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
+        <!-- 왼쪽: 세팅 패널 -->
         <div class="lg:col-span-5 bg-white p-6 rounded-3xl shadow-xl border border-slate-200/60 no-print space-y-6 self-start">
             <div class="border-b border-slate-100 pb-3 flex justify-between items-end">
                 <div>
@@ -101,19 +104,32 @@
             </button>
         </div>
 
+        <!-- 오른쪽: 시험지 및 정답지 뷰어 -->
         <div class="lg:col-span-7 bg-white p-4 md:p-8 rounded-3xl shadow-xl border border-slate-200/60 flex flex-col min-h-[800px]">
             <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6 no-print">
                 <div class="flex items-center gap-2">
                     <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <h2 class="text-sm font-bold text-slate-600">YMS 인쇄 가이드 뷰어</h2>
                 </div>
-                <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center gap-1.5">
-                    🖨️ 고화질 인쇄 / PDF 출력
-                </button>
+                
+                <!-- 💡 맞춤형 다중 인쇄 버튼 영역 -->
+                <div class="flex gap-2" id="printButtons">
+                    <button onclick="printStudent()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center gap-1.5">
+                        📄 학생용
+                    </button>
+                    <button onclick="printTeacher()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow-md shadow-red-500/10 cursor-pointer flex items-center gap-1.5">
+                        📝 교사용
+                    </button>
+                    <button onclick="printBoth()" class="bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-bold py-2.5 px-3 rounded-xl transition-all shadow-md cursor-pointer flex items-center">
+                        일괄(1~2쪽)
+                    </button>
+                </div>
             </div>
             
+            <!-- 인쇄될 실제 영역 -->
             <div id="printArea" class="bg-white text-slate-900 pb-10">
                 
+                <!-- [1페이지] 학생용 시험지 영역 -->
                 <div id="testPaperSection">
                     <div class="border-2 border-slate-900 p-4 mb-6 bg-slate-50/50">
                         <div class="flex justify-between items-baseline border-b border-slate-400 pb-3">
@@ -153,7 +169,9 @@
                     </ol>
                 </div>
 
+                <!-- [2페이지] 교사용 정답지 영역 (초기엔 숨김 처리, 생성 시 노출) -->
                 <div id="answerKeySection" class="hidden mt-20 pt-10 border-t-[3px] border-dashed border-slate-300 page-break">
+                    <!-- 정답지 전용 헤더 -->
                     <div class="border-2 border-slate-900 p-4 mb-6 bg-slate-50/50">
                         <div class="flex justify-between items-baseline border-b border-slate-400 pb-3">
                             <div>
@@ -176,6 +194,7 @@
                         <h2 class="text-xl font-black tracking-widest border-b-2 border-red-600 pb-1 inline-block px-14 uppercase font-serif text-red-600">Answer Key</h2>
                     </div>
 
+                    <!-- 정답 리스트 출력 영역 -->
                     <ol id="answerList" class="list-none grid grid-cols-2 gap-x-12 gap-y-3 text-xs font-medium"></ol>
                 </div>
                 
@@ -195,14 +214,49 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateString = `Date: ${yyyy}. ${mm}. ${dd}`;
             
-            // 시험지와 정답지 둘 다에 날짜 적용
             document.getElementById('viewDate').innerText = dateString;
             document.getElementById('viewAnsDate').innerText = dateString;
             
             renderBookList();
+            
+            // 초기엔 인쇄 버튼들 비활성화
+            document.getElementById('printButtons').style.opacity = '0.5';
+            document.getElementById('printButtons').style.pointerEvents = 'none';
         }
 
         const STORAGE_KEY = 'yms_voca_library';
+
+        // --- 인쇄 제어 함수 ---
+        function printStudent() {
+            // 정답지 영역을 인쇄할 때 보이지 않도록 클래스 추가
+            document.getElementById('answerKeySection').classList.add('hide-on-print');
+            window.print();
+            // 인쇄 대화상자가 닫히면 다시 보이게 복구
+            document.getElementById('answerKeySection').classList.remove('hide-on-print');
+        }
+
+        function printTeacher() {
+            const testSection = document.getElementById('testPaperSection');
+            const answerSection = document.getElementById('answerKeySection');
+            
+            // 학생 시험지 숨김
+            testSection.classList.add('hide-on-print');
+            
+            // 교사용 정답지만 뽑을 땐 2페이지로 넘기거나 상단 여백을 주는 클래스 임시 제거 (깔끔하게 1페이지에 나오도록)
+            answerSection.classList.remove('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
+            
+            window.print();
+            
+            // 인쇄 후 복구
+            testSection.classList.remove('hide-on-print');
+            answerSection.classList.add('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
+        }
+
+        function printBoth() {
+            // 아무것도 숨기지 않고 통째로 인쇄 (1쪽: 시험지, 2쪽: 정답지)
+            window.print();
+        }
+        // ------------------
 
         function saveVocab() {
             const title = document.getElementById('bookTitle').value.trim();
@@ -328,11 +382,9 @@
             const displayTitle = titleInput ? titleInput : '책 제목을 입력하세요';
             const displayUnit = unitInput ? unitInput : '';
             
-            // 학생용 시험지 헤더 업데이트
             document.getElementById('viewBookTitle').innerText = displayTitle;
             document.getElementById('viewBookUnit').innerText = displayUnit;
             
-            // 교사용 정답지 헤더 업데이트
             document.getElementById('viewAnsBookTitle').innerText = displayTitle;
             document.getElementById('viewAnsBookUnit').innerText = displayUnit;
         }
@@ -356,7 +408,6 @@
                 return;
             }
 
-            // 한글/영어 분리 파싱 로직
             let words = inputText.split('\n')
                 .map(line => line.trim())
                 .filter(line => line.length > 0)
@@ -388,30 +439,29 @@
                 return;
             }
 
-            // 1. 섞기
             for (let i = words.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [words[i], words[j]] = [words[j], words[i]];
             }
 
-            // 2. 개수 맞추기
             const selectedWords = [];
             for (let i = 0; i < count; i++) {
                 selectedWords.push(words[i % words.length]);
             }
 
-            // 3. 화면 초기화 및 정답지 영역 노출
             testList.innerHTML = '';
             answerList.innerHTML = '';
-            answerKeySection.classList.remove('hidden'); // 정답지 보이기
+            answerKeySection.classList.remove('hidden'); 
+            
+            // 시험지 생성이 완료되면 인쇄 버튼 활성화
+            document.getElementById('printButtons').style.opacity = '1';
+            document.getElementById('printButtons').style.pointerEvents = 'auto';
             
             const halfPoint = Math.ceil(selectedWords.length / 2);
 
-            // 4. 시험지 및 정답지 렌더링
             selectedWords.forEach((word, index) => {
                 const displayIndex = String(index + 1).padStart(2, '0');
                 
-                // 타입 결정
                 let isEngQuestion = true;
                 if (type === 'eng') {
                     isEngQuestion = true;
@@ -421,7 +471,7 @@
                     isEngQuestion = index < halfPoint;
                 }
                 
-                // --- 학생용 시험지 문항 생성 ---
+                // 학생용
                 let testHTML = '';
                 if (isEngQuestion) {
                     testHTML = `
@@ -447,15 +497,13 @@
                 `;
                 testList.appendChild(testLi);
 
-
-                // --- 교사용 정답지 문항 생성 ---
+                // 교사용
                 let questionText = isEngQuestion ? word.eng : word.kor;
                 let answerText = isEngQuestion ? word.kor : word.eng;
                 
                 const answerLi = document.createElement('li');
                 answerLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
                 
-                // 채점하기 쉽도록 학생용 시험지와 동일한 형태를 띄되, 빈칸 자리에 빨간 글씨로 정답 출력
                 answerLi.innerHTML = `
                     <div class="flex items-center w-full">
                         <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
