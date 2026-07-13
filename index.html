@@ -8,11 +8,15 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; }
+        
+        /* 인쇄 전용 스타일 설정 */
         @media print {
             body { background-color: #ffffff; padding: 0; }
             .no-print { display: none !important; }
             #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 0; box-shadow: none !important; border: none !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            /* 시험지와 정답지를 다른 페이지로 분리하는 핵심 CSS */
+            .page-break { page-break-before: always; margin-top: 0 !important; padding-top: 0 !important; border: none !important; }
         }
     </style>
 </head>
@@ -93,23 +97,24 @@
             </div>
 
             <button onclick="generateTest()" class="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-3.5 px-4 rounded-xl transition-all duration-200 shadow-lg text-sm cursor-pointer tracking-wider">
-                ⚡ PREVIEW GENERATE (시험지 반영)
+                ⚡ PREVIEW GENERATE (시험지 & 정답지 반영)
             </button>
         </div>
 
-        <div class="lg:col-span-7 bg-white p-4 md:p-8 rounded-3xl shadow-xl border border-slate-200/60 flex flex-col justify-between min-h-[800px]">
-            <div>
-                <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6 no-print">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <h2 class="text-sm font-bold text-slate-600">YMS 인쇄 가이드 뷰어</h2>
-                    </div>
-                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center gap-1.5">
-                        🖨️ 고화질 인쇄 / PDF 출력
-                    </button>
+        <div class="lg:col-span-7 bg-white p-4 md:p-8 rounded-3xl shadow-xl border border-slate-200/60 flex flex-col min-h-[800px]">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6 no-print">
+                <div class="flex items-center gap-2">
+                    <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <h2 class="text-sm font-bold text-slate-600">YMS 인쇄 가이드 뷰어</h2>
                 </div>
+                <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center gap-1.5">
+                    🖨️ 고화질 인쇄 / PDF 출력
+                </button>
+            </div>
+            
+            <div id="printArea" class="bg-white text-slate-900 pb-10">
                 
-                <div id="printArea" class="p-4 bg-white text-slate-900">
+                <div id="testPaperSection">
                     <div class="border-2 border-slate-900 p-4 mb-6 bg-slate-50/50">
                         <div class="flex justify-between items-baseline border-b border-slate-400 pb-3">
                             <div>
@@ -147,9 +152,36 @@
                         </p>
                     </ol>
                 </div>
+
+                <div id="answerKeySection" class="hidden mt-20 pt-10 border-t-[3px] border-dashed border-slate-300 page-break">
+                    <div class="border-2 border-slate-900 p-4 mb-6 bg-slate-50/50">
+                        <div class="flex justify-between items-baseline border-b border-slate-400 pb-3">
+                            <div>
+                                <div class="text-sm font-black tracking-widest text-slate-900 uppercase font-serif">YMS <span class="text-xs font-bold text-red-500 tracking-wide lowercase italic ml-1">answer key</span></div>
+                            </div>
+                            <div class="text-right max-w-[60%] truncate">
+                                <div id="viewAnsBookTitle" class="text-base font-black tracking-tight text-slate-900">책 제목</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center text-center text-xs font-bold mt-3 gap-4">
+                            <div id="viewAnsDate" class="w-[30%] border-r border-slate-300 py-0.5 text-left text-slate-800 whitespace-nowrap">Date: </div>
+                            <div class="w-[70%] py-0.5 text-left flex items-center min-w-0 pr-2">
+                                <span class="shrink-0 mr-1">Unit:</span>
+                                <div id="viewAnsBookUnit" class="flex-1 font-normal pl-1 truncate text-left"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center my-6">
+                        <h2 class="text-xl font-black tracking-widest border-b-2 border-red-600 pb-1 inline-block px-14 uppercase font-serif text-red-600">Answer Key</h2>
+                    </div>
+
+                    <ol id="answerList" class="list-none grid grid-cols-2 gap-x-12 gap-y-3 text-xs font-medium"></ol>
+                </div>
+                
             </div>
             
-            <div class="border-t border-slate-100 pt-4 mt-6 text-center text-xs text-slate-400 no-print">
+            <div class="mt-auto border-t border-slate-100 pt-4 text-center text-xs text-slate-400 no-print">
                 Designed with YMS Academic Layout System.
             </div>
         </div>
@@ -161,7 +193,12 @@
             const yyyy = today.getFullYear();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const dd = String(today.getDate()).padStart(2, '0');
-            document.getElementById('viewDate').innerText = `Date: ${yyyy}. ${mm}. ${dd}`;
+            const dateString = `Date: ${yyyy}. ${mm}. ${dd}`;
+            
+            // 시험지와 정답지 둘 다에 날짜 적용
+            document.getElementById('viewDate').innerText = dateString;
+            document.getElementById('viewAnsDate').innerText = dateString;
+            
             renderBookList();
         }
 
@@ -287,8 +324,17 @@
         function updateHeader() {
             const titleInput = document.getElementById('bookTitle').value.trim();
             const unitInput = document.getElementById('bookUnit').value.trim();
-            document.getElementById('viewBookTitle').innerText = titleInput ? titleInput : '책 제목을 입력하세요';
-            document.getElementById('viewBookUnit').innerText = unitInput ? unitInput : '';
+            
+            const displayTitle = titleInput ? titleInput : '책 제목을 입력하세요';
+            const displayUnit = unitInput ? unitInput : '';
+            
+            // 학생용 시험지 헤더 업데이트
+            document.getElementById('viewBookTitle').innerText = displayTitle;
+            document.getElementById('viewBookUnit').innerText = displayUnit;
+            
+            // 교사용 정답지 헤더 업데이트
+            document.getElementById('viewAnsBookTitle').innerText = displayTitle;
+            document.getElementById('viewAnsBookUnit').innerText = displayUnit;
         }
 
         function generateTest() {
@@ -296,49 +342,76 @@
             const inputText = document.getElementById('excelInput').value.trim();
             const count = parseInt(document.getElementById('wordCount').value);
             const type = document.getElementById('testType').value;
+            
             const testList = document.getElementById('testList');
+            const answerList = document.getElementById('answerList');
+            const answerKeySection = document.getElementById('answerKeySection');
 
             if (!inputText) {
                 alert('엑셀 단어 리스트를 붙여넣어 주세요!');
                 return;
             }
-
             if (!count || count < 1) {
                 alert('출제 문항 수를 정확히 입력해 주세요!');
                 return;
             }
 
-            let words = inputText.split('\n').map(line => {
-                let parts = line.includes('\t') ? line.split('\t') : line.split(',');
-                return { eng: parts[0] ? parts[0].trim() : '', kor: parts[1] ? parts[1].trim() : '' };
-            }).filter(word => word.eng && word.kor);
+            // 한글/영어 분리 파싱 로직
+            let words = inputText.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .map(line => {
+                    let eng = '';
+                    let kor = '';
+                    if (line.includes('\t')) {
+                        let parts = line.split('\t');
+                        eng = parts[0];
+                        kor = parts.slice(1).join(' ');
+                    } else {
+                        let match = line.match(/^(.*?)([가-힣].*)$/);
+                        if (match) {
+                            eng = match[1];
+                            kor = match[2];
+                            if (eng.trim().endsWith(',')) eng = eng.trim().slice(0, -1);
+                        } else {
+                            let parts = line.split(',');
+                            eng = parts[0];
+                            kor = parts.slice(1).join(',');
+                        }
+                    }
+                    return { eng: eng ? eng.trim() : '', kor: kor ? kor.trim() : '' };
+                })
+                .filter(word => word.eng && word.kor);
 
             if (words.length === 0) {
-                alert('데이터 분석에 실패했습니다. 엑셀 형식을 다시 확인해 주세요.');
+                alert('데이터 분석에 실패했습니다. 단어 형식을 다시 확인해 주세요.');
                 return;
             }
 
-            // 1. 단어 목록 무작위 섞기
+            // 1. 섞기
             for (let i = words.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [words[i], words[j]] = [words[j], words[i]];
             }
 
-            // 2. 사용자가 입력한 숫자(count)만큼 '정확히' 배열 생성 (단어가 부족하면 강제 반복)
+            // 2. 개수 맞추기
             const selectedWords = [];
             for (let i = 0; i < count; i++) {
                 selectedWords.push(words[i % words.length]);
             }
 
+            // 3. 화면 초기화 및 정답지 영역 노출
             testList.innerHTML = '';
+            answerList.innerHTML = '';
+            answerKeySection.classList.remove('hidden'); // 정답지 보이기
             
             const halfPoint = Math.ceil(selectedWords.length / 2);
 
-            // 3. 렌더링 (단어 잘림 방지 CSS 적용)
+            // 4. 시험지 및 정답지 렌더링
             selectedWords.forEach((word, index) => {
-                let questionHTML = '';
                 const displayIndex = String(index + 1).padStart(2, '0');
                 
+                // 타입 결정
                 let isEngQuestion = true;
                 if (type === 'eng') {
                     isEngQuestion = true;
@@ -348,30 +421,52 @@
                     isEngQuestion = index < halfPoint;
                 }
                 
-                // 단어가 너무 짧게 잘리지 않도록 CSS 조정 (max-w-[130px] 및 shrink-0 추가)
+                // --- 학생용 시험지 문항 생성 ---
+                let testHTML = '';
                 if (isEngQuestion) {
-                    questionHTML = `
+                    testHTML = `
                         <span class="font-bold text-[13px] text-slate-900 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.eng}</span>
                         <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
                         <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
                     `;
                 } else {
-                    questionHTML = `
+                    testHTML = `
                         <span class="font-bold text-xs text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.kor}</span>
                         <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
                         <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
                     `;
                 }
 
-                const li = document.createElement('li');
-                li.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
-                li.innerHTML = `
+                const testLi = document.createElement('li');
+                testLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
+                testLi.innerHTML = `
                     <div class="flex items-center w-full">
                         <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
-                        <div class="flex items-center flex-1 min-w-0">${questionHTML}</div>
+                        <div class="flex items-center flex-1 min-w-0">${testHTML}</div>
                     </div>
                 `;
-                testList.appendChild(li);
+                testList.appendChild(testLi);
+
+
+                // --- 교사용 정답지 문항 생성 ---
+                let questionText = isEngQuestion ? word.eng : word.kor;
+                let answerText = isEngQuestion ? word.kor : word.eng;
+                
+                const answerLi = document.createElement('li');
+                answerLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
+                
+                // 채점하기 쉽도록 학생용 시험지와 동일한 형태를 띄되, 빈칸 자리에 빨간 글씨로 정답 출력
+                answerLi.innerHTML = `
+                    <div class="flex items-center w-full">
+                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
+                        <div class="flex items-center flex-1 min-w-0">
+                            <span class="font-bold text-[13px] text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${questionText}</span>
+                            <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
+                            <span class="font-bold text-[13px] text-red-600 flex-1 truncate">${answerText}</span>
+                        </div>
+                    </div>
+                `;
+                answerList.appendChild(answerLi);
             });
         }
     </script>
