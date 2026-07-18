@@ -1,1014 +1,542 @@
 <!DOCTYPE html>
-
 <html lang="ko">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>YMS 단어 테스트 생성기 v10</title>
-
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-
     <style>
-
-        
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
-
         body { font-family: 'Noto Sans KR', sans-serif; }
-
         
-
         /* 인쇄 전용 스타일 설정 */
-
         @media print {
-
             body { background-color: #ffffff; padding: 0; }
-
             .no-print { display: none !important; }
-
             #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 0; box-shadow: none !important; border: none !important; }
-
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
             .page-break { page-break-before: always; margin-top: 0 !important; padding-top: 0 !important; border: none !important; }
-            .auto-fit-text { font-size: 10px; }
             
-
             /* 특정 영역만 인쇄할 때 숨기기 위한 클래스 */
-
             .hide-on-print { display: none !important; }
-
         }
-
     </style>
-
 </head>
-
 <body class="bg-slate-100 min-h-screen p-4 md:p-8" onload="initApp()">
 
-
-
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-
         
-
         <!-- 왼쪽: 세팅 패널 -->
-
         <div class="lg:col-span-5 bg-white p-6 rounded-3xl shadow-xl border border-slate-200/60 no-print space-y-6 self-start">
-
             <div class="border-b border-slate-100 pb-3 flex justify-between items-end">
-
                 <div>
-
                     <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">📝 TEST GENERATOR <span class="text-blue-600 font-medium text-sm ml-1">v10.0</span></h1>
-
                     <p class="text-xs text-slate-400 mt-1">책 단위로 유닛을 관리하는 스마트 보관함 적용</p>
-
                 </div>
-
             </div>
-
-
 
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl space-y-3">
-
                 <h2 class="text-sm font-bold text-indigo-900 flex items-center gap-1.5">💾 0. 내 단어장 보관함</h2>
-
                 <div class="flex flex-col gap-2">
-
                     <select id="savedBookList" onchange="updateUnitList()" class="w-full p-2.5 border border-indigo-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
-
                         <option value="">▼ 책 제목을 먼저 선택하세요</option>
-
                     </select>
-
                     
-
                     <div class="flex gap-2 items-center">
-
                         <select id="savedUnitList" class="flex-1 p-2.5 border border-indigo-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:bg-slate-100 disabled:text-slate-400" disabled>
-
                             <option value="">▼ 유닛을 선택하세요</option>
-
                         </select>
-
                         <button onclick="loadVocab()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 px-4 rounded-lg transition-all shadow-sm">
-
                             📥 불러오기
-
                         </button>
-
                         <button onclick="deleteVocab()" class="bg-white border border-red-200 text-red-500 hover:bg-red-50 text-xs font-bold py-2.5 px-3 rounded-lg transition-all">
-
                             삭제
-
                         </button>
-
                     </div>
-
                 </div>
-
             </div>
-
-
 
             <div class="space-y-3">
-
                 <h2 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">📘 1. 클래스 및 교재 정보</h2>
-
                 <div class="grid grid-cols-2 gap-3">
-
                     <div>
-
                         <label class="block text-[11px] font-bold text-slate-500 mb-1">책 제목 <span class="text-red-500">*</span></label>
-
                         <input type="text" id="bookTitle" oninput="updateHeader()" placeholder="예: 고등 필수 Voca" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all">
-
                     </div>
-
                     <div>
-
                         <label class="block text-[11px] font-bold text-slate-500 mb-1">출제 범위 (Unit)</label>
-
                         <input type="text" id="bookUnit" oninput="updateHeader()" placeholder="예: Unit 01-03" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all">
-
                     </div>
-
                 </div>
-
             </div>
-
-
 
             <div class="space-y-2">
-
                 <div class="flex justify-between items-end">
-
                     <h2 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">📊 2. 엑셀 데이터 매핑 저장소</h2>
-
                     <button onclick="saveVocab()" class="text-[11px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 py-1 px-2.5 rounded border border-emerald-200 transition-all">
-
                         + 현재 데이터 보관함에 저장
-
                     </button>
-
                 </div>
-
                 <textarea id="excelInput" class="w-full h-40 p-3 border border-slate-200 rounded-xl text-xs font-mono bg-slate-50/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none" 
-
                     placeholder="evaluate&#9;평가하다&#10;comprehensive&#9;종합적인"></textarea>
-
             </div>
-
-
 
             <div class="space-y-3">
-
                 <h2 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">⚙️ 3. 출제 세부 옵션</h2>
-
                 <div class="grid grid-cols-2 gap-3">
-
                     <div>
-
                         <label class="block text-[11px] font-bold text-slate-500 mb-1">출제 문항 수</label>
-
                         <input type="number" id="wordCount" value="20" min="1" onchange="generateTest()" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500">
-
                     </div>
-
                     <div>
-
                         <label class="block text-[11px] font-bold text-slate-500 mb-1">시험 유형</label>
-
                         <select id="testType" onchange="generateTest()" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500">
-
                             <option value="mix" selected>YMS 반반 정렬 혼합형 (Mix)</option>
-
                             <option value="eng">영어 보고 뜻 쓰기 (Eng ➔ Kor)</option>
-
                             <option value="kor">뜻 보고 영어 쓰기 (Kor ➔ Eng)</option>
-
                         </select>
-
                     </div>
-
                 </div>
-
             </div>
-
-
 
             <button onclick="generateTest()" class="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-3.5 px-4 rounded-xl transition-all duration-200 shadow-lg text-sm cursor-pointer tracking-wider">
-
                 ⚡ PREVIEW GENERATE (시험지 & 정답지 반영)
-
             </button>
-
         </div>
-
-
 
         <!-- 오른쪽: 시험지 및 정답지 뷰어 -->
-
         <div class="lg:col-span-7 bg-white p-4 md:p-8 rounded-3xl shadow-xl border border-slate-200/60 flex flex-col min-h-[800px]">
-
             <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6 no-print">
-
                 <div class="flex items-center gap-2">
-
                     <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-
                     <h2 class="text-sm font-bold text-slate-600">YMS 인쇄 가이드 뷰어</h2>
-
                 </div>
-
                 
-
                 <!-- 💡 맞춤형 다중 인쇄 버튼 영역 -->
-
                 <div class="flex gap-2" id="printButtons">
-
                     <button onclick="printStudent()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center gap-1.5">
-
                         📄 학생용
-
                     </button>
-
                     <button onclick="printTeacher()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow-md shadow-red-500/10 cursor-pointer flex items-center gap-1.5">
-
                         📝 교사용
-
                     </button>
-
                     <button onclick="printBoth()" class="bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-bold py-2.5 px-3 rounded-xl transition-all shadow-md cursor-pointer flex items-center">
-
                         일괄(1~2쪽)
-
                     </button>
-
                 </div>
-
             </div>
-
             
-
             <!-- 인쇄될 실제 영역 -->
-
             <div id="printArea" class="bg-white text-slate-900 pb-10">
-
                 
-
                 <!-- [1페이지] 학생용 시험지 영역 -->
-
                 <div id="testPaperSection">
-
                     <div class="border-2 border-slate-900 p-4 mb-6 bg-slate-50/50">
-
                         <div class="flex justify-between items-baseline border-b border-slate-400 pb-3">
-
                             <div>
-
                                 <div class="text-sm font-black tracking-widest text-slate-900 uppercase font-serif">YMS <span class="text-xs font-medium text-slate-500 tracking-wide lowercase italic ml-1">your mastery solution</span></div>
-
                             </div>
-
                             <div class="text-right max-w-[60%] truncate">
-
                                 <div id="viewBookTitle" class="text-base font-black tracking-tight text-slate-900">책 제목을 입력하세요</div>
-
                             </div>
-
                         </div>
-
                         
-
                         <div class="flex justify-between items-center text-center text-xs font-bold mt-3 gap-4">
-
                             <div id="viewDate" class="w-[22%] border-r border-slate-300 py-0.5 text-left text-slate-800 whitespace-nowrap">Date: </div>
-
                             <div class="w-[26%] border-r border-slate-300 py-0.5 text-left flex items-center min-w-0 pr-2">
-
                                 <span class="shrink-0 mr-1">Unit:</span>
-
                                 <div id="viewBookUnit" class="flex-1 border-b border-slate-400 h-4 min-w-[30px] font-normal pl-1 truncate"></div>
-
                             </div>
-
                             <div class="w-[32%] border-r border-slate-300 py-0.5 text-left flex items-center pr-2">
-
                                 <span class="shrink-0 mr-1">Name:</span>
-
                                 <div class="flex-1 border-b border-slate-400 h-4 min-w-[50px]">&nbsp;</div>
-
                             </div>
-
                             <div class="w-[20%] text-red-600 font-black text-right whitespace-nowrap">
-
                                 Score: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / 100
-
                             </div>
-
                         </div>
-
                     </div>
-
                     
-
                     <div class="text-center my-6">
-
                         <h2 class="text-xl font-black tracking-widest border-b-2 border-slate-800 pb-1 inline-block px-14 uppercase font-serif">Vocabulary Test</h2>
-
                     </div>
-
                     
-
                     <ol id="testList" class="list-none grid grid-cols-2 gap-x-12 gap-y-3 text-xs font-medium">
-
                         <p class="text-slate-400 text-center py-32 col-span-2 text-xs font-normal">
-
                             데이터를 입력하거나 보관함에서 불러온 뒤 <br>
-
                             <span class="text-blue-500 font-semibold">[PREVIEW GENERATE]</span> 버튼을 누르면 시험지가 빌드됩니다.
-
                         </p>
-
                     </ol>
-
                 </div>
-
-
 
                 <!-- [2페이지] 교사용 정답지 영역 (초기엔 숨김 처리, 생성 시 노출) -->
-
                 <div id="answerKeySection" class="hidden mt-20 pt-10 border-t-[3px] border-dashed border-slate-300 page-break">
-
                     <!-- 정답지 전용 헤더 -->
-
                     <div class="border-2 border-slate-900 p-4 mb-6 bg-slate-50/50">
-
                         <div class="flex justify-between items-baseline border-b border-slate-400 pb-3">
-
                             <div>
-
                                 <div class="text-sm font-black tracking-widest text-slate-900 uppercase font-serif">YMS <span class="text-xs font-bold text-red-500 tracking-wide lowercase italic ml-1">answer key</span></div>
-
                             </div>
-
                             <div class="text-right max-w-[60%] truncate">
-
                                 <div id="viewAnsBookTitle" class="text-base font-black tracking-tight text-slate-900">책 제목</div>
-
                             </div>
-
                         </div>
-
                         <div class="flex justify-between items-center text-center text-xs font-bold mt-3 gap-4">
-
                             <div id="viewAnsDate" class="w-[30%] border-r border-slate-300 py-0.5 text-left text-slate-800 whitespace-nowrap">Date: </div>
-
                             <div class="w-[70%] py-0.5 text-left flex items-center min-w-0 pr-2">
-
                                 <span class="shrink-0 mr-1">Unit:</span>
-
                                 <div id="viewAnsBookUnit" class="flex-1 font-normal pl-1 truncate text-left"></div>
-
                             </div>
-
                         </div>
-
                     </div>
-
-
 
                     <div class="text-center my-6">
-
                         <h2 class="text-xl font-black tracking-widest border-b-2 border-red-600 pb-1 inline-block px-14 uppercase font-serif text-red-600">Answer Key</h2>
-
                     </div>
 
-
-
                     <!-- 정답 리스트 출력 영역 -->
-
                     <ol id="answerList" class="list-none grid grid-cols-2 gap-x-12 gap-y-3 text-xs font-medium"></ol>
-
                 </div>
-
                 
-
             </div>
-
             
-
             <div class="mt-auto border-t border-slate-100 pt-4 text-center text-xs text-slate-400 no-print">
-
                 Designed with YMS Academic Layout System.
-
             </div>
-
         </div>
-
     </div>
 
-
-
     <script>
-
         function initApp() {
-
             const today = new Date();
-
             const yyyy = today.getFullYear();
-
             const mm = String(today.getMonth() + 1).padStart(2, '0');
-
             const dd = String(today.getDate()).padStart(2, '0');
-
             const dateString = `Date: ${yyyy}. ${mm}. ${dd}`;
-
             
-
             document.getElementById('viewDate').innerText = dateString;
-
             document.getElementById('viewAnsDate').innerText = dateString;
-
             
-
             renderBookList();
-
             
-
             // 초기엔 인쇄 버튼들 비활성화
-
             document.getElementById('printButtons').style.opacity = '0.5';
-
             document.getElementById('printButtons').style.pointerEvents = 'none';
-
         }
-
-
 
         const STORAGE_KEY = 'yms_voca_library';
 
-
-
         // --- 인쇄 제어 함수 ---
-
         function printStudent() {
-
             // 정답지 영역을 인쇄할 때 보이지 않도록 클래스 추가
-
             document.getElementById('answerKeySection').classList.add('hide-on-print');
-
             window.print();
-
             // 인쇄 대화상자가 닫히면 다시 보이게 복구
-
             document.getElementById('answerKeySection').classList.remove('hide-on-print');
-
         }
-
-
 
         function printTeacher() {
-
             const testSection = document.getElementById('testPaperSection');
-
             const answerSection = document.getElementById('answerKeySection');
-
             
-
             // 학생 시험지 숨김
-
             testSection.classList.add('hide-on-print');
-
             
-
             // 교사용 정답지만 뽑을 땐 2페이지로 넘기거나 상단 여백을 주는 클래스 임시 제거 (깔끔하게 1페이지에 나오도록)
-
             answerSection.classList.remove('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
-
             
-
             window.print();
-
             
-
             // 인쇄 후 복구
-
             testSection.classList.remove('hide-on-print');
-
             answerSection.classList.add('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
-
         }
-
-
 
         function printBoth() {
-
             // 아무것도 숨기지 않고 통째로 인쇄 (1쪽: 시험지, 2쪽: 정답지)
-
             window.print();
-
         }
-
         // ------------------
 
-
-
         function saveVocab() {
-
             const title = document.getElementById('bookTitle').value.trim();
-
             const unit = document.getElementById('bookUnit').value.trim();
-
             const text = document.getElementById('excelInput').value.trim();
 
-
-
             if (!title) {
-
                 alert('책 제목은 필수로 입력하셔야 합니다!');
-
                 return;
-
             }
-
             if (!text) {
-
                 alert('저장할 단어 데이터가 없습니다.');
-
                 return;
-
             }
-
-
 
             const saveKey = unit ? `${title}::${unit}` : `${title}::전체`;
-
             let library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-
             
-
             library[saveKey] = { title: title, unit: unit, text: text };
-
             localStorage.setItem(STORAGE_KEY, JSON.stringify(library));
-
             
-
             alert(`[ ${title} ] 교재의 유닛이 안전하게 저장되었습니다! 💾`);
-
             
-
             renderBookList();
-
             document.getElementById('savedBookList').value = title;
-
             updateUnitList();
-
             document.getElementById('savedUnitList').value = saveKey;
-
         }
-
-
 
         function renderBookList() {
-
             const library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-
             const bookSelect = document.getElementById('savedBookList');
-
             const unitSelect = document.getElementById('savedUnitList');
-
             
-
             const books = [...new Set(Object.values(library).map(item => item.title))];
 
-
-
             bookSelect.innerHTML = '<option value="">▼ 책 제목을 먼저 선택하세요</option>';
-
             unitSelect.innerHTML = '<option value="">▼ 유닛을 선택하세요</option>';
-
             unitSelect.disabled = true;
 
-
-
             if (books.length === 0) {
-
                 bookSelect.innerHTML = '<option value="">저장된 단어장이 없습니다.</option>';
-
                 return;
-
             }
-
-
 
             books.forEach(book => {
-
                 const option = document.createElement('option');
-
                 option.value = book;
-
                 option.textContent = book;
-
                 bookSelect.appendChild(option);
-
             });
-
         }
-
-
 
         function updateUnitList() {
-
             const library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-
             const selectedBook = document.getElementById('savedBookList').value;
-
             const unitSelect = document.getElementById('savedUnitList');
-
             
-
             unitSelect.innerHTML = '<option value="">▼ 유닛을 선택하세요</option>';
-
             
-
             if (!selectedBook) {
-
                 unitSelect.disabled = true;
-
                 return;
-
             }
-
-
 
             unitSelect.disabled = false;
-
             
-
             Object.entries(library).forEach(([key, data]) => {
-
                 if (data.title === selectedBook) {
-
                     const option = document.createElement('option');
-
                     option.value = key; 
-
                     option.textContent = data.unit ? data.unit : '전체 (유닛 미지정)';
-
                     unitSelect.appendChild(option);
-
                 }
-
             });
-
         }
-
-
 
         function loadVocab() {
-
             const saveKey = document.getElementById('savedUnitList').value;
-
             if (!saveKey) {
-
                 alert('불러올 책과 유닛을 정확히 선택해 주세요.');
-
                 return;
-
             }
-
-
 
             const library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-
             const data = library[saveKey];
 
-
-
             if (data) {
-
                 document.getElementById('bookTitle').value = data.title;
-
                 document.getElementById('bookUnit').value = data.unit;
-
                 document.getElementById('excelInput').value = data.text;
-
                 
-
                 updateHeader();
-
                 alert(`성공적으로 불러왔습니다! ✨`);
-
             }
-
         }
-
-
 
         function deleteVocab() {
-
             const saveKey = document.getElementById('savedUnitList').value;
-
             if (!saveKey) {
-
                 alert('삭제할 유닛을 먼저 선택해 주세요.');
-
                 return;
-
             }
-
-
 
             if (confirm(`선택하신 유닛의 단어장을 정말 삭제하시겠습니까?`)) {
-
                 let library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-
                 delete library[saveKey];
-
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(library));
-
                 
-
                 const currentBook = document.getElementById('savedBookList').value;
-
                 renderBookList();
-
                 document.getElementById('savedBookList').value = currentBook;
-
                 updateUnitList();
-
                 
-
                 alert('삭제되었습니다.');
-
             }
-
         }
-
-
 
         function updateHeader() {
-
             const titleInput = document.getElementById('bookTitle').value.trim();
-
             const unitInput = document.getElementById('bookUnit').value.trim();
-
             
-
             const displayTitle = titleInput ? titleInput : '책 제목을 입력하세요';
-
             const displayUnit = unitInput ? unitInput : '';
-
             
-
             document.getElementById('viewBookTitle').innerText = displayTitle;
-
             document.getElementById('viewBookUnit').innerText = displayUnit;
-
             
-
             document.getElementById('viewAnsBookTitle').innerText = displayTitle;
-
             document.getElementById('viewAnsBookUnit').innerText = displayUnit;
-
         }
-
-
-
+        function getFontSizeClass(text) {
+            if (text.length > 20) return 'text-[9px]';
+            if (text.length > 15) return 'text-[10px]';
+            return 'text-[13px]';
+        }
         function generateTest() {
-
             updateHeader();
-            const getFontSizeClass = (text) => (text.length > 12 ? 'auto-fit-text' : '');
-
             const inputText = document.getElementById('excelInput').value.trim();
-
             const count = parseInt(document.getElementById('wordCount').value);
-
             const type = document.getElementById('testType').value;
-
             
-
             const testList = document.getElementById('testList');
-
             const answerList = document.getElementById('answerList');
-
             const answerKeySection = document.getElementById('answerKeySection');
 
-
-
             if (!inputText) {
-
                 alert('엑셀 단어 리스트를 붙여넣어 주세요!');
-
                 return;
-
             }
-
             if (!count || count < 1) {
-
                 alert('출제 문항 수를 정확히 입력해 주세요!');
-
                 return;
-
             }
-
-
 
             let words = inputText.split('\n')
-
                 .map(line => line.trim())
-
                 .filter(line => line.length > 0)
-
                 .map(line => {
-
                     let eng = '';
-
                     let kor = '';
-
                     if (line.includes('\t')) {
-
                         let parts = line.split('\t');
-
                         eng = parts[0];
-
                         kor = parts.slice(1).join(' ');
-
                     } else {
-
                         let match = line.match(/^(.*?)([가-힣].*)$/);
-
                         if (match) {
-
                             eng = match[1];
-
                             kor = match[2];
-
                             if (eng.trim().endsWith(',')) eng = eng.trim().slice(0, -1);
-
                         } else {
-
                             let parts = line.split(',');
-
                             eng = parts[0];
-
                             kor = parts.slice(1).join(',');
-
                         }
-
                     }
-
                     return { eng: eng ? eng.trim() : '', kor: kor ? kor.trim() : '' };
-
                 })
-
                 .filter(word => word.eng && word.kor);
 
-
-
             if (words.length === 0) {
-
                 alert('데이터 분석에 실패했습니다. 단어 형식을 다시 확인해 주세요.');
-
                 return;
-
             }
-
-
 
             for (let i = words.length - 1; i > 0; i--) {
-
                 const j = Math.floor(Math.random() * (i + 1));
-
                 [words[i], words[j]] = [words[j], words[i]];
-
             }
-
-
 
             const selectedWords = [];
-
             for (let i = 0; i < count; i++) {
-
                 selectedWords.push(words[i % words.length]);
-
             }
 
-
-
             testList.innerHTML = '';
-
             answerList.innerHTML = '';
-
             answerKeySection.classList.remove('hidden'); 
-
             
-
             // 시험지 생성이 완료되면 인쇄 버튼 활성화
-
             document.getElementById('printButtons').style.opacity = '1';
-
             document.getElementById('printButtons').style.pointerEvents = 'auto';
-
             
-
             const halfPoint = Math.ceil(selectedWords.length / 2);
 
-
-
             selectedWords.forEach((word, index) => {
-
                 const displayIndex = String(index + 1).padStart(2, '0');
-
                 
-
                 let isEngQuestion = true;
-
                 if (type === 'eng') {
-
                     isEngQuestion = true;
-
                 } else if (type === 'kor') {
-
                     isEngQuestion = false;
-
                 } else {
-
                     isEngQuestion = index < halfPoint;
-
+                }
+                
+                // 학생용
+                let testHTML = '';
+                let fontSize = getFontSizeClass(isEngQuestion ? word.eng : word.kor);
+                testHTML = `
+                   <span class="font-bold ${fontSize} text-slate-900 tracking-tight break-all shrink-0" style="max-width: 140px;">
+                        ${isEngQuestion ? word.eng : word.kor}
+                   </span>
+                    <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
+                    <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
+                if (isEngQuestion) {
+                    testHTML = `
+                        <span class="font-bold text-[13px] text-slate-900 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.eng}</span>
+                        <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
+                        <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
+                    `;
+                } else {
+                    testHTML = `
+                        <span class="font-bold text-xs text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.kor}</span>
+                        <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
+                        <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
+                    `;
                 }
 
-                
-
-                // 학생용
-
-                let testHTML = '';
-if (isEngQuestion) {
-    testHTML = `
-        <span class="font-bold text-[13px] ${getFontSizeClass(word.eng)} text-slate-900 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.eng}</span>
-        <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-        <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
-    `;
-} else {
-    testHTML = `
-        <span class="font-bold text-xs ${getFontSizeClass(word.kor)} text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.kor}</span>
-        <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-        <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
-    `;
-}
-
-
-
                 const testLi = document.createElement('li');
-
                 testLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
-
                 testLi.innerHTML = `
-
                     <div class="flex items-center w-full">
-
                         <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
-
                         <div class="flex items-center flex-1 min-w-0">${testHTML}</div>
-
                     </div>
-
                 `;
-
                 testList.appendChild(testLi);
 
-
-
                 // 교사용
-
                 let questionText = isEngQuestion ? word.eng : word.kor;
-let answerText = isEngQuestion ? word.kor : word.eng;
-
-answerLi.innerHTML = `
-    <div class="flex items-center w-full">
-        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
-        <div class="flex items-center flex-1 min-w-0">
-            <span class="font-bold text-[13px] ${getFontSizeClass(questionText)} text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${questionText}</span>
-            <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-            <span class="font-bold text-[13px] ${getFontSizeClass(answerText)} text-red-600 flex-1 truncate">${answerText}</span>
-        </div>
-    </div>
-`;
-
+                let answerText = isEngQuestion ? word.kor : word.eng;
+                let qFontSize = getFontSizeClass(questionText);
+                answerLi.innerHTML = `
+                   <div class="flex items-center w-full">
+                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
+                        <div class="flex items-center flex-1 min-w-0">
+                            <span class="font-bold ${qFontSize} text-slate-700 tracking-tight break-all shrink-0" style="max-width: 120px;">${questionText}</span>
+                            <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
+                            <span class="font-bold text-[11px] text-red-600 flex-1 break-all">${answerText}</span>
+                    </div>
+                </div>
+                const answerLi = document.createElement('li');
+                answerLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
+                
+                answerLi.innerHTML = `
+                    <div class="flex items-center w-full">
+                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
+                        <div class="flex items-center flex-1 min-w-0">
+                            <span class="font-bold text-[13px] text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${questionText}</span>
+                            <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
+                            <span class="font-bold text-[13px] text-red-600 flex-1 truncate">${answerText}</span>
+                        </div>
+                    </div>
+                `;
                 answerList.appendChild(answerLi);
-
             });
-
         }
-
     </script>
-
 </body>
-
 </html>
