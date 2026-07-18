@@ -9,70 +9,79 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; }
         @media print {
-            body { background-color: #ffffff; padding: 0; }
             .no-print { display: none !important; }
-            #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
-            .page-break { page-break-after: always; }
             .hide-on-print { display: none !important; }
+            .page-break { page-break-after: always; }
         }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen p-4 md:p-8" onload="initApp()">
+
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- 세팅 패널 -->
         <div class="lg:col-span-5 bg-white p-6 rounded-3xl shadow-xl border border-slate-200/60 no-print space-y-6 self-start">
             <h1 class="text-xl font-extrabold text-slate-900">📝 TEST GENERATOR v10.0</h1>
+            
+            <!-- 보관함 -->
             <div class="bg-indigo-50 p-4 rounded-xl space-y-3">
                 <h2 class="text-sm font-bold text-indigo-900">💾 내 단어장 보관함</h2>
-                <select id="savedBookList" onchange="updateUnitList()" class="w-full p-2.5 border rounded-lg text-sm"></select>
+                <select id="savedBookList" onchange="updateUnitList()" class="w-full p-2.5 border rounded-lg text-sm bg-white"></select>
                 <div class="flex gap-2">
-                    <select id="savedUnitList" class="flex-1 p-2.5 border rounded-lg text-sm" disabled></select>
-                    <button onclick="loadVocab()" class="bg-indigo-600 text-white text-xs px-4 rounded-lg">📥 불러오기</button>
-                    <button onclick="deleteVocab()" class="border text-red-500 text-xs px-3 rounded-lg">삭제</button>
+                    <select id="savedUnitList" class="flex-1 p-2.5 border rounded-lg text-sm bg-white" disabled></select>
+                    <button type="button" onclick="loadVocab()" class="bg-indigo-600 text-white text-xs px-4 rounded-lg font-bold">불러오기</button>
+                    <button type="button" onclick="deleteVocab()" class="border text-red-500 text-xs px-3 rounded-lg font-bold">삭제</button>
                 </div>
             </div>
+
             <div class="grid grid-cols-2 gap-3">
                 <input type="text" id="bookTitle" oninput="updateHeader()" placeholder="책 제목" class="p-2.5 border rounded-xl text-sm">
                 <input type="text" id="bookUnit" oninput="updateHeader()" placeholder="Unit 범위" class="p-2.5 border rounded-xl text-sm">
             </div>
-            <textarea id="excelInput" class="w-full h-40 p-3 border rounded-xl text-xs font-mono" placeholder="evaluate&#9;평가하다"></textarea>
-            <button onclick="saveVocab()" class="text-emerald-600 text-xs font-bold">+ 데이터 저장</button>
+            <textarea id="excelInput" class="w-full h-40 p-3 border rounded-xl text-xs font-mono bg-slate-50" placeholder="evaluate&#9;평가하다"></textarea>
+            
+            <button type="button" onclick="saveVocab()" class="text-emerald-600 text-xs font-bold block">+ 데이터 저장하기</button>
+
             <div class="grid grid-cols-2 gap-3">
                 <input type="number" id="wordCount" value="20" class="p-2.5 border rounded-xl text-sm">
                 <select id="testType" class="p-2.5 border rounded-xl text-sm"><option value="mix">혼합형</option><option value="eng">Eng➔Kor</option><option value="kor">Kor➔Eng</option></select>
             </div>
-            <button onclick="generateTest()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">⚡ PREVIEW GENERATE</button>
+            <button type="button" onclick="generateTest()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-sm">⚡ PREVIEW GENERATE</button>
         </div>
-        <!-- 뷰어 패널 -->
+
+        <!-- 뷰어 -->
         <div class="lg:col-span-7 bg-white p-8 rounded-3xl shadow-xl border min-h-[800px]">
             <div class="flex gap-2 mb-6 no-print">
-                <button onclick="printStudyGuide()" class="bg-emerald-600 text-white text-xs px-4 py-2 rounded-xl">📖 단어장(3단)</button>
-                <button onclick="printStudent()" class="bg-blue-600 text-white text-xs px-4 py-2 rounded-xl">📄 학생용 TEST</button>
-                <button onclick="printTeacher()" class="bg-red-500 text-white text-xs px-4 py-2 rounded-xl">📝 교사용 ANSWER</button>
+                <button type="button" onclick="printStudyGuide()" class="bg-emerald-600 text-white text-xs px-4 py-2 rounded-xl font-bold">📖 단어장(3단)</button>
+                <button type="button" onclick="printStudent()" class="bg-blue-600 text-white text-xs px-4 py-2 rounded-xl font-bold">📄 학생용 TEST</button>
+                <button type="button" onclick="printTeacher()" class="bg-red-500 text-white text-xs px-4 py-2 rounded-xl font-bold">📝 교사용 ANSWER</button>
             </div>
+            
             <div id="printArea">
                 <div id="testPaperSection">
-                    <div id="viewBookTitle" class="text-lg font-bold border-b pb-2 mb-4">제목을 입력하세요</div>
+                    <div id="viewBookTitle" class="text-lg font-black border-b pb-2 mb-4">책 제목을 입력하세요</div>
                     <ol id="testList" class="grid grid-cols-2 gap-x-12 gap-y-3 text-xs"></ol>
                 </div>
-                <div id="answerKeySection" class="hidden mt-20 border-t-2 border-dashed pt-10">
-                    <h2 class="text-lg font-bold text-red-600 mb-4">Answer Key</h2>
+                <div id="answerKeySection" class="hidden mt-20 border-t-2 border-dashed pt-10 page-break">
+                    <h2 class="text-lg font-black text-red-600 mb-4">Answer Key</h2>
                     <ol id="answerList" class="grid grid-cols-2 gap-x-12 gap-y-3 text-xs"></ol>
                 </div>
             </div>
         </div>
     </div>
+
     <script>
         const STORAGE_KEY = 'yms_voca_library';
-        function initApp() { renderBookList(); }
         
-        // --- 1. 단어장 3단 출력 ---
+        // 버튼 클릭이 잘 작동하도록 강제 연결
+        function initApp() { renderBookList(); }
+
+        // --- 출력 함수 ---
         function printStudyGuide() {
             const text = document.getElementById('excelInput').value.trim();
-            if (!text) return alert('데이터가 없습니다.');
+            if (!text) return alert('단어를 먼저 입력하세요.');
             const lines = text.split('\n').filter(l => l.trim());
-            const win = window.open('', '_blank', 'width=900,height=1000');
-            let html = `<html><head><style>body{font-family:'Noto Sans KR',sans-serif; margin:15mm;} .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;} .row{display:flex; border-bottom:1px solid #eee; padding:4px 0; font-size:10pt;} .eng{font-weight:700; width:45%;} .kor{width:55%; color:#555;} @media print{.pb{page-break-after:always;}}</style></head><body><div class="grid">`;
+            const win = window.open('', '_blank');
+            let html = `<html><head><style>body{font-family:sans-serif; margin:15mm;} .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;} .row{display:flex; border-bottom:1px solid #eee; padding:4px 0; font-size:10pt;} .eng{font-weight:700; width:40%;} .kor{width:60%; color:#555;} .pb{page-break-after:always;}</style></head><body><div class="grid">`;
             lines.forEach((line, i) => {
                 const [eng, kor] = line.split('\t');
                 html += `<div class="row"><span class="eng">${eng.trim()}</span><span class="kor">${(kor||'').trim()}</span></div>`;
@@ -80,28 +89,28 @@
             });
             html += `</div></body></html>`; win.document.write(html); win.document.close(); setTimeout(() => win.print(), 500);
         }
-        
-        // --- 2. 시험지/정답지 인쇄 ---
+
         function printStudent() { document.getElementById('answerKeySection').classList.add('hide-on-print'); window.print(); document.getElementById('answerKeySection').classList.remove('hide-on-print'); }
         function printTeacher() { document.getElementById('testPaperSection').classList.add('hide-on-print'); window.print(); document.getElementById('testPaperSection').classList.remove('hide-on-print'); }
 
-        // --- 3. 기존 필수 로직 ---
-        function updateHeader() { document.getElementById('viewBookTitle').innerText = document.getElementById('bookTitle').value || '제목을 입력하세요'; }
+        // --- 데이터 관리 함수 ---
         function saveVocab() {
             const title = document.getElementById('bookTitle').value;
             const unit = document.getElementById('bookUnit').value;
             const text = document.getElementById('excelInput').value;
-            if(!title || !text) return alert('필수 항목을 입력하세요.');
+            if(!title || !text) return alert('제목과 데이터를 입력하세요.');
             let lib = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             lib[`${title}::${unit || '전체'}`] = { title, unit, text };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(lib));
-            renderBookList(); alert('저장 완료!');
+            renderBookList(); alert('저장되었습니다.');
         }
+
         function renderBookList() {
             const lib = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             const list = document.getElementById('savedBookList');
             list.innerHTML = '<option value="">▼ 책 선택</option>' + [...new Set(Object.values(lib).map(i=>i.title))].map(t => `<option value="${t}">${t}</option>`).join('');
         }
+
         function updateUnitList() {
             const lib = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             const book = document.getElementById('savedBookList').value;
@@ -110,23 +119,27 @@
             Object.entries(lib).forEach(([k, v]) => { if(v.title === book) unitList.innerHTML += `<option value="${k}">${v.unit || '전체'}</option>`; });
             unitList.disabled = false;
         }
+
         function loadVocab() {
             const key = document.getElementById('savedUnitList').value;
+            if(!key) return;
             const lib = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-            if(lib[key]) {
-                document.getElementById('bookTitle').value = lib[key].title;
-                document.getElementById('bookUnit').value = lib[key].unit;
-                document.getElementById('excelInput').value = lib[key].text;
-                updateHeader();
-            }
+            document.getElementById('bookTitle').value = lib[key].title;
+            document.getElementById('bookUnit').value = lib[key].unit;
+            document.getElementById('excelInput').value = lib[key].text;
+            updateHeader();
         }
+
         function deleteVocab() {
             const key = document.getElementById('savedUnitList').value;
+            if(!key) return;
             let lib = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             delete lib[key]; localStorage.setItem(STORAGE_KEY, JSON.stringify(lib));
-            renderBookList(); alert('삭제 완료');
+            renderBookList(); alert('삭제되었습니다.');
         }
+
         function generateTest() {
+            updateHeader();
             const input = document.getElementById('excelInput').value.trim();
             const count = parseInt(document.getElementById('wordCount').value);
             const words = input.split('\n').filter(l => l.trim()).map(l => { const [e, k] = l.split('\t'); return { eng: e, kor: k }; });
@@ -135,10 +148,11 @@
             for(let i=0; i<count; i++) {
                 const w = words[i % words.length];
                 testList.innerHTML += `<li class="border-b py-2 flex justify-between"><span>${w.eng}</span> <span>····➔</span> <span class="flex-1 border-b"></span></li>`;
-                ansList.innerHTML += `<li class="border-b py-2 flex justify-between"><span>${w.eng}</span> <span class="text-red-600">${w.kor}</span></li>`;
+                ansList.innerHTML += `<li class="border-b py-2 flex justify-between"><span>${w.eng}</span> <span class="text-red-600 font-bold">${w.kor}</span></li>`;
             }
             document.getElementById('answerKeySection').classList.remove('hidden');
         }
+        function updateHeader() { document.getElementById('viewBookTitle').innerText = document.getElementById('bookTitle').value || '제목을 입력하세요'; }
     </script>
 </body>
 </html>
