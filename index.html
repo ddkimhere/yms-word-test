@@ -228,27 +228,11 @@
 
                 <!-- 💡 맞춤형 다중 인쇄 버튼 영역 -->
 
-                <div class="flex gap-2" id="printButtons">
-
-                    <button onclick="printStudent()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center gap-1.5">
-
-                        📄 학생용
-
-                    </button>
-
-                    <button onclick="printTeacher()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow-md shadow-red-500/10 cursor-pointer flex items-center gap-1.5">
-
-                        📝 교사용
-
-                    </button>
-
-                    <button onclick="printBoth()" class="bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-bold py-2.5 px-3 rounded-xl transition-all shadow-md cursor-pointer flex items-center">
-
-                        일괄(1~2쪽)
-
-                    </button>
-
-                </div>
+                <div class="flex gap-2 flex-wrap" id="printButtons">
+    <button onclick="printStudyGuide()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition-all">📖 단어장(3단)</button>
+    <button onclick="printStudent()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition-all">📄 학생용 TEST</button>
+    <button onclick="printTeacher()" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition-all">📝 교사용 정답지</button>
+</div>
 
             </div>
 
@@ -456,53 +440,57 @@
 
         // --- 인쇄 제어 함수 ---
 
-        function printStudent() {
+      function printStudyGuide() {
+    const inputText = document.getElementById('excelInput').value.trim();
+    if (!inputText) return alert('데이터를 먼저 입력해주세요.');
 
-            // 정답지 영역을 인쇄할 때 보이지 않도록 클래스 추가
+    const win = window.open('', '_blank', 'width=900,height=1000');
+    const lines = inputText.split('\n');
+    
+    let html = `<html><head>
+        <style>
+            body { font-family: 'Noto Sans KR', sans-serif; margin: 15mm; }
+            .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+            .word-row { display: flex; border-bottom: 1px solid #e2e8f0; padding: 4px 0; font-size: 10pt; }
+            .eng { font-weight: 700; width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .kor { width: 55%; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        </style>
+    </head><body>
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <h1 style="font-size:18px;">${document.getElementById('bookTitle').value} - 단어장</h1>
+            <div>Name: ___________ Date: ___________</div>
+        </div>
+        <div class="grid-container">`;
 
-            document.getElementById('answerKeySection').classList.add('hide-on-print');
+    lines.forEach((line, i) => {
+        const [eng, kor] = line.split('\t');
+        html += `<div class="word-row"><span class="eng">${eng}</span><span class="kor">${kor || ''}</span></div>`;
+        if ((i + 1) % 90 === 0 && (i + 1) !== lines.length) html += `</div><div style="page-break-after:always;"></div><div class="grid-container">`;
+    });
 
-            window.print();
+    html += `</div></body></html>`;
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => win.print(), 500);
+}
 
-            // 인쇄 대화상자가 닫히면 다시 보이게 복구
+// 2. 학생용 시험지 (기존과 동일)
+function printStudent() {
+    document.getElementById('answerKeySection').classList.add('hide-on-print');
+    window.print();
+    document.getElementById('answerKeySection').classList.remove('hide-on-print');
+}
 
-            document.getElementById('answerKeySection').classList.remove('hide-on-print');
-
-        }
-
-
-
-        function printTeacher() {
-
-            const testSection = document.getElementById('testPaperSection');
-
-            const answerSection = document.getElementById('answerKeySection');
-
-            
-
-            // 학생 시험지 숨김
-
-            testSection.classList.add('hide-on-print');
-
-            
-
-            // 교사용 정답지만 뽑을 땐 2페이지로 넘기거나 상단 여백을 주는 클래스 임시 제거 (깔끔하게 1페이지에 나오도록)
-
-            answerSection.classList.remove('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
-
-            
-
-            window.print();
-
-            
-
-            // 인쇄 후 복구
-
-            testSection.classList.remove('hide-on-print');
-
-            answerSection.classList.add('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
-
-        }
+// 3. 교사용 정답지
+function printTeacher() {
+    const testSection = document.getElementById('testPaperSection');
+    const answerSection = document.getElementById('answerKeySection');
+    testSection.classList.add('hide-on-print');
+    answerSection.classList.remove('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
+    window.print();
+    testSection.classList.remove('hide-on-print');
+    answerSection.classList.add('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
+}
 
 
 
