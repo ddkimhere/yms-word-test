@@ -9,15 +9,12 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; }
         
-        /* 인쇄 전용 스타일 설정 */
         @media print {
             body { background-color: #ffffff; padding: 0; }
             .no-print { display: none !important; }
             #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 0; box-shadow: none !important; border: none !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .page-break { page-break-before: always; margin-top: 0 !important; padding-top: 0 !important; border: none !important; }
-            
-            /* 특정 영역만 인쇄할 때 숨기기 위한 클래스 */
             .hide-on-print { display: none !important; }
         }
     </style>
@@ -112,7 +109,6 @@
                     <h2 class="text-sm font-bold text-slate-600">YMS 인쇄 가이드 뷰어</h2>
                 </div>
                 
-                <!-- 💡 맞춤형 다중 인쇄 버튼 영역 -->
                 <div class="flex gap-2" id="printButtons">
                     <button onclick="printStudent()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center gap-1.5">
                         📄 학생용
@@ -126,10 +122,8 @@
                 </div>
             </div>
             
-            <!-- 인쇄될 실제 영역 -->
             <div id="printArea" class="bg-white text-slate-900 pb-10">
                 
-                <!-- [1페이지] 학생용 시험지 영역 -->
                 <div id="testPaperSection">
                     <div class="border-2 border-slate-900 p-4 mb-6 bg-slate-50/50">
                         <div class="flex justify-between items-baseline border-b border-slate-400 pb-3">
@@ -161,7 +155,7 @@
                         <h2 class="text-xl font-black tracking-widest border-b-2 border-slate-800 pb-1 inline-block px-14 uppercase font-serif">Vocabulary Test</h2>
                     </div>
                     
-                    <ol id="testList" class="list-none grid grid-cols-2 gap-x-12 gap-y-3 text-xs font-medium">
+                    <ol id="testList" class="list-none grid grid-cols-2 gap-x-8 gap-y-2 text-xs font-medium">
                         <p class="text-slate-400 text-center py-32 col-span-2 text-xs font-normal">
                             데이터를 입력하거나 보관함에서 불러온 뒤 <br>
                             <span class="text-blue-500 font-semibold">[PREVIEW GENERATE]</span> 버튼을 누르면 시험지가 빌드됩니다.
@@ -169,9 +163,7 @@
                     </ol>
                 </div>
 
-                <!-- [2페이지] 교사용 정답지 영역 (초기엔 숨김 처리, 생성 시 노출) -->
                 <div id="answerKeySection" class="hidden mt-20 pt-10 border-t-[3px] border-dashed border-slate-300 page-break">
-                    <!-- 정답지 전용 헤더 -->
                     <div class="border-2 border-slate-900 p-4 mb-6 bg-slate-50/50">
                         <div class="flex justify-between items-baseline border-b border-slate-400 pb-3">
                             <div>
@@ -194,10 +186,8 @@
                         <h2 class="text-xl font-black tracking-widest border-b-2 border-red-600 pb-1 inline-block px-14 uppercase font-serif text-red-600">Answer Key</h2>
                     </div>
 
-                    <!-- 정답 리스트 출력 영역 -->
-                    <ol id="answerList" class="list-none grid grid-cols-2 gap-x-12 gap-y-3 text-xs font-medium"></ol>
+                    <ol id="answerList" class="list-none grid grid-cols-2 gap-x-8 gap-y-2 text-xs font-medium"></ol>
                 </div>
-                
             </div>
             
             <div class="mt-auto border-t border-slate-100 pt-4 text-center text-xs text-slate-400 no-print">
@@ -213,99 +203,54 @@
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const dd = String(today.getDate()).padStart(2, '0');
             const dateString = `Date: ${yyyy}. ${mm}. ${dd}`;
-            
             document.getElementById('viewDate').innerText = dateString;
             document.getElementById('viewAnsDate').innerText = dateString;
-            
             renderBookList();
-            
-            // 초기엔 인쇄 버튼들 비활성화
             document.getElementById('printButtons').style.opacity = '0.5';
             document.getElementById('printButtons').style.pointerEvents = 'none';
         }
 
         const STORAGE_KEY = 'yms_voca_library';
 
-        // --- 인쇄 제어 함수 ---
         function printStudent() {
-            // 정답지 영역을 인쇄할 때 보이지 않도록 클래스 추가
             document.getElementById('answerKeySection').classList.add('hide-on-print');
             window.print();
-            // 인쇄 대화상자가 닫히면 다시 보이게 복구
             document.getElementById('answerKeySection').classList.remove('hide-on-print');
         }
 
         function printTeacher() {
             const testSection = document.getElementById('testPaperSection');
             const answerSection = document.getElementById('answerKeySection');
-            
-            // 학생 시험지 숨김
             testSection.classList.add('hide-on-print');
-            
-            // 교사용 정답지만 뽑을 땐 2페이지로 넘기거나 상단 여백을 주는 클래스 임시 제거 (깔끔하게 1페이지에 나오도록)
             answerSection.classList.remove('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
-            
             window.print();
-            
-            // 인쇄 후 복구
             testSection.classList.remove('hide-on-print');
             answerSection.classList.add('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
         }
 
-        function printBoth() {
-            // 아무것도 숨기지 않고 통째로 인쇄 (1쪽: 시험지, 2쪽: 정답지)
-            window.print();
-        }
-        // ------------------
+        function printBoth() { window.print(); }
 
         function saveVocab() {
             const title = document.getElementById('bookTitle').value.trim();
             const unit = document.getElementById('bookUnit').value.trim();
             const text = document.getElementById('excelInput').value.trim();
-
-            if (!title) {
-                alert('책 제목은 필수로 입력하셔야 합니다!');
-                return;
-            }
-            if (!text) {
-                alert('저장할 단어 데이터가 없습니다.');
-                return;
-            }
-
+            if (!title || !text) { alert('제목과 데이터를 입력해주세요.'); return; }
             const saveKey = unit ? `${title}::${unit}` : `${title}::전체`;
             let library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-            
             library[saveKey] = { title: title, unit: unit, text: text };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(library));
-            
-            alert(`[ ${title} ] 교재의 유닛이 안전하게 저장되었습니다! 💾`);
-            
+            alert('저장되었습니다!');
             renderBookList();
-            document.getElementById('savedBookList').value = title;
-            updateUnitList();
-            document.getElementById('savedUnitList').value = saveKey;
         }
 
         function renderBookList() {
             const library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             const bookSelect = document.getElementById('savedBookList');
-            const unitSelect = document.getElementById('savedUnitList');
-            
             const books = [...new Set(Object.values(library).map(item => item.title))];
-
             bookSelect.innerHTML = '<option value="">▼ 책 제목을 먼저 선택하세요</option>';
-            unitSelect.innerHTML = '<option value="">▼ 유닛을 선택하세요</option>';
-            unitSelect.disabled = true;
-
-            if (books.length === 0) {
-                bookSelect.innerHTML = '<option value="">저장된 단어장이 없습니다.</option>';
-                return;
-            }
-
             books.forEach(book => {
                 const option = document.createElement('option');
-                option.value = book;
-                option.textContent = book;
+                option.value = book; option.textContent = book;
                 bookSelect.appendChild(option);
             });
         }
@@ -314,21 +259,12 @@
             const library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             const selectedBook = document.getElementById('savedBookList').value;
             const unitSelect = document.getElementById('savedUnitList');
-            
             unitSelect.innerHTML = '<option value="">▼ 유닛을 선택하세요</option>';
-            
-            if (!selectedBook) {
-                unitSelect.disabled = true;
-                return;
-            }
-
-            unitSelect.disabled = false;
-            
+            unitSelect.disabled = !selectedBook;
             Object.entries(library).forEach(([key, data]) => {
                 if (data.title === selectedBook) {
                     const option = document.createElement('option');
-                    option.value = key; 
-                    option.textContent = data.unit ? data.unit : '전체 (유닛 미지정)';
+                    option.value = key; option.textContent = data.unit || '전체';
                     unitSelect.appendChild(option);
                 }
             });
@@ -336,205 +272,82 @@
 
         function loadVocab() {
             const saveKey = document.getElementById('savedUnitList').value;
-            if (!saveKey) {
-                alert('불러올 책과 유닛을 정확히 선택해 주세요.');
-                return;
-            }
-
             const library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             const data = library[saveKey];
-
             if (data) {
                 document.getElementById('bookTitle').value = data.title;
                 document.getElementById('bookUnit').value = data.unit;
                 document.getElementById('excelInput').value = data.text;
-                
                 updateHeader();
-                alert(`성공적으로 불러왔습니다! ✨`);
             }
         }
 
         function deleteVocab() {
             const saveKey = document.getElementById('savedUnitList').value;
-            if (!saveKey) {
-                alert('삭제할 유닛을 먼저 선택해 주세요.');
-                return;
-            }
-
-            if (confirm(`선택하신 유닛의 단어장을 정말 삭제하시겠습니까?`)) {
+            if (confirm('삭제하시겠습니까?')) {
                 let library = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
                 delete library[saveKey];
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(library));
-                
-                const currentBook = document.getElementById('savedBookList').value;
                 renderBookList();
-                document.getElementById('savedBookList').value = currentBook;
-                updateUnitList();
-                
-                alert('삭제되었습니다.');
             }
         }
 
         function updateHeader() {
-            const titleInput = document.getElementById('bookTitle').value.trim();
-            const unitInput = document.getElementById('bookUnit').value.trim();
-            
-            const displayTitle = titleInput ? titleInput : '책 제목을 입력하세요';
-            const displayUnit = unitInput ? unitInput : '';
-            
-            document.getElementById('viewBookTitle').innerText = displayTitle;
-            document.getElementById('viewBookUnit').innerText = displayUnit;
-            
-            document.getElementById('viewAnsBookTitle').innerText = displayTitle;
-            document.getElementById('viewAnsBookUnit').innerText = displayUnit;
+            const title = document.getElementById('bookTitle').value.trim() || '책 제목을 입력하세요';
+            const unit = document.getElementById('bookUnit').value.trim();
+            document.getElementById('viewBookTitle').innerText = title;
+            document.getElementById('viewBookUnit').innerText = unit;
+            document.getElementById('viewAnsBookTitle').innerText = title;
+            document.getElementById('viewAnsBookUnit').innerText = unit;
         }
-        function getFontSizeClass(text) {
-            if (text.length > 20) return 'text-[9px]';
-            if (text.length > 15) return 'text-[10px]';
-            return 'text-[13px]';
-        }
+
         function generateTest() {
             updateHeader();
             const inputText = document.getElementById('excelInput').value.trim();
             const count = parseInt(document.getElementById('wordCount').value);
             const type = document.getElementById('testType').value;
-            
             const testList = document.getElementById('testList');
             const answerList = document.getElementById('answerList');
             const answerKeySection = document.getElementById('answerKeySection');
 
-            if (!inputText) {
-                alert('엑셀 단어 리스트를 붙여넣어 주세요!');
-                return;
-            }
-            if (!count || count < 1) {
-                alert('출제 문항 수를 정확히 입력해 주세요!');
-                return;
-            }
+            if (!inputText) return;
+            
+            let words = inputText.split('\n').filter(line => line.trim()).map(line => {
+                let [eng, kor] = line.includes('\t') ? line.split('\t') : line.split(/,(.*)/s);
+                return { eng: (eng || '').trim(), kor: (kor || '').trim() };
+            });
 
-            let words = inputText.split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0)
-                .map(line => {
-                    let eng = '';
-                    let kor = '';
-                    if (line.includes('\t')) {
-                        let parts = line.split('\t');
-                        eng = parts[0];
-                        kor = parts.slice(1).join(' ');
-                    } else {
-                        let match = line.match(/^(.*?)([가-힣].*)$/);
-                        if (match) {
-                            eng = match[1];
-                            kor = match[2];
-                            if (eng.trim().endsWith(',')) eng = eng.trim().slice(0, -1);
-                        } else {
-                            let parts = line.split(',');
-                            eng = parts[0];
-                            kor = parts.slice(1).join(',');
-                        }
-                    }
-                    return { eng: eng ? eng.trim() : '', kor: kor ? kor.trim() : '' };
-                })
-                .filter(word => word.eng && word.kor);
-
-            if (words.length === 0) {
-                alert('데이터 분석에 실패했습니다. 단어 형식을 다시 확인해 주세요.');
-                return;
-            }
-
+            // 셔플 및 정렬
             for (let i = words.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [words[i], words[j]] = [words[j], words[i]];
             }
 
-            const selectedWords = [];
-            for (let i = 0; i < count; i++) {
-                selectedWords.push(words[i % words.length]);
-            }
-
             testList.innerHTML = '';
             answerList.innerHTML = '';
-            answerKeySection.classList.remove('hidden'); 
-            
-            // 시험지 생성이 완료되면 인쇄 버튼 활성화
+            answerKeySection.classList.remove('hidden');
             document.getElementById('printButtons').style.opacity = '1';
             document.getElementById('printButtons').style.pointerEvents = 'auto';
-            
-            const halfPoint = Math.ceil(selectedWords.length / 2);
 
-            selectedWords.forEach((word, index) => {
+            words.slice(0, count).forEach((word, index) => {
                 const displayIndex = String(index + 1).padStart(2, '0');
-                
-                let isEngQuestion = true;
-                if (type === 'eng') {
-                    isEngQuestion = true;
-                } else if (type === 'kor') {
-                    isEngQuestion = false;
-                } else {
-                    isEngQuestion = index < halfPoint;
-                }
-                
-                // 학생용
-                let testHTML = '';
-                let fontSize = getFontSizeClass(isEngQuestion ? word.eng : word.kor);
-                testHTML = `
-                   <span class="font-bold ${fontSize} text-slate-900 tracking-tight break-all shrink-0" style="max-width: 140px;">
-                        ${isEngQuestion ? word.eng : word.kor}
-                   </span>
-                    <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-                    <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
-                if (isEngQuestion) {
-                    testHTML = `
-                        <span class="font-bold text-[13px] text-slate-900 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.eng}</span>
-                        <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-                        <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
-                    `;
-                } else {
-                    testHTML = `
-                        <span class="font-bold text-xs text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.kor}</span>
-                        <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-                        <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
-                    `;
-                }
+                const isEng = type === 'eng' || (type === 'mix' && index < Math.ceil(count / 2));
+                const q = isEng ? word.eng : word.kor;
+                const a = isEng ? word.kor : word.eng;
 
-                const testLi = document.createElement('li');
-                testLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
-                testLi.innerHTML = `
-                    <div class="flex items-center w-full">
-                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
-                        <div class="flex items-center flex-1 min-w-0">${testHTML}</div>
-                    </div>
-                `;
-                testList.appendChild(testLi);
-
-                // 교사용
-                let questionText = isEngQuestion ? word.eng : word.kor;
-                let answerText = isEngQuestion ? word.kor : word.eng;
-                let qFontSize = getFontSizeClass(questionText);
-                answerLi.innerHTML = `
-                   <div class="flex items-center w-full">
-                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
-                        <div class="flex items-center flex-1 min-w-0">
-                            <span class="font-bold ${qFontSize} text-slate-700 tracking-tight break-all shrink-0" style="max-width: 120px;">${questionText}</span>
-                            <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-                            <span class="font-bold text-[11px] text-red-600 flex-1 break-all">${answerText}</span>
-                    </div>
-                </div>
-                const answerLi = document.createElement('li');
-                answerLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
-                
-                answerLi.innerHTML = `
-                    <div class="flex items-center w-full">
-                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
-                        <div class="flex items-center flex-1 min-w-0">
-                            <span class="font-bold text-[13px] text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${questionText}</span>
-                            <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-                            <span class="font-bold text-[13px] text-red-600 flex-1 truncate">${answerText}</span>
+                // 단어가 길면 자연스럽게 줄바꿈되도록 flex-wrap 활용
+                const createRow = (question, answer, isAnswerKey = false) => `
+                    <li class="border-b border-slate-100 py-3 flex items-start gap-2">
+                        <span class="w-6 font-extrabold text-slate-400 shrink-0">${displayIndex}</span>
+                        <div class="flex flex-wrap items-center gap-x-2 w-full">
+                            <span class="font-bold text-[13px] text-slate-900">${question}</span>
+                            <span class="text-slate-300 font-light shrink-0">····➔</span>
+                            ${isAnswerKey ? `<span class="font-bold text-[13px] text-red-600">${answer}</span>` : `<span class="flex-1 min-w-[80px] border-b border-slate-300 h-5"></span>`}
                         </div>
-                    </div>
+                    </li>
                 `;
-                answerList.appendChild(answerLi);
+                testList.insertAdjacentHTML('beforeend', createRow(q, a, false));
+                answerList.insertAdjacentHTML('beforeend', createRow(q, a, true));
             });
         }
     </script>
