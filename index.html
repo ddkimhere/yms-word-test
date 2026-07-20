@@ -388,7 +388,11 @@
             document.getElementById('viewAnsBookTitle').innerText = displayTitle;
             document.getElementById('viewAnsBookUnit').innerText = displayUnit;
         }
-
+        function getFontSizeClass(text) {
+            if (text.length > 20) return 'text-[9px]';
+            if (text.length > 15) return 'text-[10px]';
+            return 'text-[13px]';
+        }
         function generateTest() {
             updateHeader();
             const inputText = document.getElementById('excelInput').value.trim();
@@ -473,6 +477,13 @@
                 
                 // 학생용
                 let testHTML = '';
+                let fontSize = getFontSizeClass(isEngQuestion ? word.eng : word.kor);
+                testHTML = `
+                   <span class="font-bold ${fontSize} text-slate-900 tracking-tight break-all shrink-0" style="max-width: 140px;">
+                        ${isEngQuestion ? word.eng : word.kor}
+                   </span>
+                    <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
+                    <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
                 if (isEngQuestion) {
                     testHTML = `
                         <span class="font-bold text-[13px] text-slate-900 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.eng}</span>
@@ -500,7 +511,16 @@
                 // 교사용
                 let questionText = isEngQuestion ? word.eng : word.kor;
                 let answerText = isEngQuestion ? word.kor : word.eng;
-                
+                let qFontSize = getFontSizeClass(questionText);
+                answerLi.innerHTML = `
+                   <div class="flex items-center w-full">
+                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
+                        <div class="flex items-center flex-1 min-w-0">
+                            <span class="font-bold ${qFontSize} text-slate-700 tracking-tight break-all shrink-0" style="max-width: 120px;">${questionText}</span>
+                            <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
+                            <span class="font-bold text-[11px] text-red-600 flex-1 break-all">${answerText}</span>
+                    </div>
+                </div>
                 const answerLi = document.createElement('li');
                 answerLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
                 
