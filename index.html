@@ -169,9 +169,8 @@
                     </ol>
                 </div>
 
-                <!-- [2페이지] 교사용 정답지 영역 (초기엔 숨김 처리, 생성 시 노출) -->
+                <!-- [2페이지] 교사용 정답지 영역 -->
                 <div id="answerKeySection" class="hidden mt-20 pt-10 border-t-[3px] border-dashed border-slate-300 page-break">
-                    <!-- 정답지 전용 헤더 -->
                     <div class="border-2 border-slate-900 p-4 mb-6 bg-slate-50/50">
                         <div class="flex justify-between items-baseline border-b border-slate-400 pb-3">
                             <div>
@@ -194,7 +193,6 @@
                         <h2 class="text-xl font-black tracking-widest border-b-2 border-red-600 pb-1 inline-block px-14 uppercase font-serif text-red-600">Answer Key</h2>
                     </div>
 
-                    <!-- 정답 리스트 출력 영역 -->
                     <ol id="answerList" class="list-none grid grid-cols-2 gap-x-12 gap-y-3 text-xs font-medium"></ol>
                 </div>
                 
@@ -219,19 +217,15 @@
             
             renderBookList();
             
-            // 초기엔 인쇄 버튼들 비활성화
             document.getElementById('printButtons').style.opacity = '0.5';
             document.getElementById('printButtons').style.pointerEvents = 'none';
         }
 
         const STORAGE_KEY = 'yms_voca_library';
 
-        // --- 인쇄 제어 함수 ---
         function printStudent() {
-            // 정답지 영역을 인쇄할 때 보이지 않도록 클래스 추가
             document.getElementById('answerKeySection').classList.add('hide-on-print');
             window.print();
-            // 인쇄 대화상자가 닫히면 다시 보이게 복구
             document.getElementById('answerKeySection').classList.remove('hide-on-print');
         }
 
@@ -239,24 +233,18 @@
             const testSection = document.getElementById('testPaperSection');
             const answerSection = document.getElementById('answerKeySection');
             
-            // 학생 시험지 숨김
             testSection.classList.add('hide-on-print');
-            
-            // 교사용 정답지만 뽑을 땐 2페이지로 넘기거나 상단 여백을 주는 클래스 임시 제거 (깔끔하게 1페이지에 나오도록)
             answerSection.classList.remove('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
             
             window.print();
             
-            // 인쇄 후 복구
             testSection.classList.remove('hide-on-print');
             answerSection.classList.add('mt-20', 'pt-10', 'border-t-[3px]', 'page-break');
         }
 
         function printBoth() {
-            // 아무것도 숨기지 않고 통째로 인쇄 (1쪽: 시험지, 2쪽: 정답지)
             window.print();
         }
-        // ------------------
 
         function saveVocab() {
             const title = document.getElementById('bookTitle').value.trim();
@@ -388,11 +376,13 @@
             document.getElementById('viewAnsBookTitle').innerText = displayTitle;
             document.getElementById('viewAnsBookUnit').innerText = displayUnit;
         }
+
         function getFontSizeClass(text) {
             if (text.length > 20) return 'text-[9px]';
             if (text.length > 15) return 'text-[10px]';
             return 'text-[13px]';
         }
+
         function generateTest() {
             updateHeader();
             const inputText = document.getElementById('excelInput').value.trim();
@@ -457,7 +447,6 @@
             answerList.innerHTML = '';
             answerKeySection.classList.remove('hidden'); 
             
-            // 시험지 생성이 완료되면 인쇄 버튼 활성화
             document.getElementById('printButtons').style.opacity = '1';
             document.getElementById('printButtons').style.pointerEvents = 'auto';
             
@@ -475,15 +464,8 @@
                     isEngQuestion = index < halfPoint;
                 }
                 
-                // 학생용
+                // 학생용 항목 생성
                 let testHTML = '';
-                let fontSize = getFontSizeClass(isEngQuestion ? word.eng : word.kor);
-                testHTML = `
-                   <span class="font-bold ${fontSize} text-slate-900 tracking-tight break-all shrink-0" style="max-width: 140px;">
-                        ${isEngQuestion ? word.eng : word.kor}
-                   </span>
-                    <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-                    <span class="flex-1 border-b border-slate-300 h-5">&nbsp;</span>
                 if (isEngQuestion) {
                     testHTML = `
                         <span class="font-bold text-[13px] text-slate-900 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${word.eng}</span>
@@ -508,29 +490,20 @@
                 `;
                 testList.appendChild(testLi);
 
-                // 교사용
+                // 교사용 정답 항목 생성
                 let questionText = isEngQuestion ? word.eng : word.kor;
                 let answerText = isEngQuestion ? word.kor : word.eng;
                 let qFontSize = getFontSizeClass(questionText);
+
+                const answerLi = document.createElement('li');
+                answerLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
                 answerLi.innerHTML = `
-                   <div class="flex items-center w-full">
+                    <div class="flex items-center w-full">
                         <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
                         <div class="flex items-center flex-1 min-w-0">
                             <span class="font-bold ${qFontSize} text-slate-700 tracking-tight break-all shrink-0" style="max-width: 120px;">${questionText}</span>
                             <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
                             <span class="font-bold text-[11px] text-red-600 flex-1 break-all">${answerText}</span>
-                    </div>
-                </div>
-                const answerLi = document.createElement('li');
-                answerLi.className = 'border-b border-slate-100 py-2.5 flex items-center justify-between pr-2';
-                
-                answerLi.innerHTML = `
-                    <div class="flex items-center w-full">
-                        <span class="w-6 text-[11px] font-extrabold text-slate-400">${displayIndex}</span>
-                        <div class="flex items-center flex-1 min-w-0">
-                            <span class="font-bold text-[13px] text-slate-700 tracking-tight max-w-[130px] overflow-hidden text-ellipsis whitespace-nowrap shrink-0">${questionText}</span>
-                            <span class="text-slate-300 font-light mx-2 shrink-0">····➔</span>
-                            <span class="font-bold text-[13px] text-red-600 flex-1 truncate">${answerText}</span>
                         </div>
                     </div>
                 `;
